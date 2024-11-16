@@ -13,19 +13,20 @@ def clear_screen():
 def render_board(player, obstacles, missiles, score, lives, fuel):
     board = [[" " for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
 
-    # Set player
+    # Place player
     board[player["y"]][player["x"]] = "P"
 
-    # Set obstacles
+    # Place obstacles
     for obs in obstacles:
         if 0 <= obs["y"] < BOARD_HEIGHT:
             board[obs["y"]][obs["x"]] = "O"
 
-    # Set missiles
+    # Place missiles
     for missile in missiles:
         if 0 <= missile["y"] < BOARD_HEIGHT:
             board[missile["y"]][missile["x"]] = "|"
 
+    # Render board
     clear_screen()
     for row in board:
         print("".join(row))
@@ -42,6 +43,7 @@ def main():
     tick_rate = 0.2
     game_running = True
 
+    # Instructions
     clear_screen()
     print("Welcome to River Raid!")
     print("\nControls:")
@@ -49,8 +51,8 @@ def main():
     print("- Right Arrow: Move Right")
     print("- Spacebar: Shoot")
     print("- Q: Quit")
-    print("\nPress any key to start!")
-    keyboard.wait("space")
+    print("\nPress Enter to start!")
+    input()
 
     while game_running:
         # Handle input
@@ -65,8 +67,8 @@ def main():
             print("\nYou quit the game.")
             break
 
-        # Add obstacles
-        if random.random() < 0.2:  # Adjust frequency
+        # Add new obstacles
+        if random.random() < 0.2:  # Adjust frequency as needed
             obstacles.append({"x": random.randint(0, BOARD_WIDTH - 1), "y": 0})
 
         # Move obstacles
@@ -111,12 +113,10 @@ def main():
             if lives == 0:
                 game_running = False
 
-        # Score
         score += 1
 
         render_board(player, obstacles, missiles, score, lives, fuel)
 
-        # Check for game over
         if lives <= 0:
             print("\nGame Over!")
             print(f"Final Score: {score}")
