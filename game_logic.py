@@ -6,11 +6,8 @@ import keyboard
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 10
 
-def clear_screen():
-    os.system("cls" if os.name == "nt" else "clear")
-
 # Render game board
-def render_board(player, obstacles, missiles, score, lives, fuel):
+def render_board(player, obstacles, missiles, fuel_depots, score, lives, fuel):
     board = [[" " for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)]
 
     # Place player
@@ -21,22 +18,26 @@ def render_board(player, obstacles, missiles, score, lives, fuel):
         if 0 <= obs["y"] < BOARD_HEIGHT:
             board[obs["y"]][obs["x"]] = "O"
 
+    # Place fuel depots
+    for depot in fuel_depots:
+        if 0 <= depot["y"] < BOARD_HEIGHT:
+            board[depot["y"]][depot["x"]] = "F"
+
     # Place missiles
     for missile in missiles:
         if 0 <= missile["y"] < BOARD_HEIGHT:
             board[missile["y"]][missile["x"]] = "|"
 
-    # Render board
-    clear_screen()
-    for row in board:
-        print("".join(row))
-    print(f"Score: {score} | Lives: {lives} | Fuel: {fuel}")
+    # Render entire board as string
+    board_output = "\n".join("".join(row) for row in board)
+    stats = f"Score: {score} | Lives: {lives} | Fuel: {fuel}\n"
+    return stats + board_output
 
 def main():
-    # Game variables
     player = {"x": BOARD_WIDTH // 2, "y": BOARD_HEIGHT - 1}
     obstacles = []
     missiles = []
+    fuel_depots = []
     score = 0
     lives = 3
     fuel = 100
@@ -44,7 +45,7 @@ def main():
     game_running = True
 
     # Instructions
-    clear_screen()
+    os.system("cls" if os.name == "nt" else "clear")
     print("Welcome to River Raid!")
     print("\nControls:")
     print("- Left Arrow: Move Left")
@@ -61,19 +62,27 @@ def main():
         if keyboard.is_pressed("right") and player["x"] < BOARD_WIDTH - 1:
             player["x"] += 1
         if keyboard.is_pressed("space"):
-            if not missiles or missiles[-1]["y"] < player["y"] - 2:  # Prevent spam
+            if not missiles or missiles[-1]["y"] < player["y"] - 2:
                 missiles.append({"x": player["x"], "y": player["y"] - 1})
         if keyboard.is_pressed("q"):
             print("\nYou quit the game.")
             break
 
         # Add new obstacles
-        if random.random() < 0.2:  # Adjust frequency as needed
+        if random.random() < 0.2:
             obstacles.append({"x": random.randint(0, BOARD_WIDTH - 1), "y": 0})
+
+        # Add new fuel depots
+        if random.random() < 0.05:
+            fuel_depots.append({"x": random.randint(0, BOARD_WIDTH - 1), "y": 0})
 
         # Move obstacles
         for obs in obstacles:
             obs["y"] += 1
+
+        # Move fuel
+        for depot in fuel_depots:
+            depot["y"] += 1
 
         # Move missiles
         for missile in missiles:
@@ -90,6 +99,12 @@ def main():
                     game_running = False
                 break
 
+        # Handle fuel collection
+        for depot in fuel_depots:
+            if depot["x"] == player["x"] and depot["y"] == player["y"]:
+                fuel = min(100, fuel + 50)
+                fuel_depots.remove(depot)
+
         # Handle hits
         for missile in missiles:
             for obs in obstacles:
@@ -102,6 +117,7 @@ def main():
         # Remove objects
         obstacles = [obs for obs in obstacles if obs["y"] < BOARD_HEIGHT]
         missiles = [missile for missile in missiles if missile["y"] >= 0]
+        fuel_depots = [depot for depot in fuel_depots if depot["y"] < BOARD_HEIGHT]
 
         # Decrease fuel
         fuel -= 1
@@ -115,7 +131,10 @@ def main():
 
         score += 1
 
-        render_board(player, obstacles, missiles, score, lives, fuel)
+        # Render the game
+        board_output = render_board(player, obstacles, missiles, fuel_depots, score, lives, fuel)
+        os.system("cls" if os.name == "nt" else "clear")
+        print(board_output)
 
         if lives <= 0:
             print("\nGame Over!")
