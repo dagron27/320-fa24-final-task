@@ -14,3 +14,19 @@ Lives: Start with 3 lives. Collisions or running out of fuel will cost you a lif
 
 Requirements
 keyboard library
+
+# Client Application
+
+This repository contains the client-side code for the game.
+
+## Setup
+1. Clone the repository.
+2. Install dependencies: `pip install -r requirements.txt`.
+3. Run the application: `python app/main.py`.
+
+## Structure
+- **app/**: Main application logic.
+- **gui/**: Handles the graphical user interface.
+- **entities.py**: Game entities like Player, Obstacle, etc.
+- **game_logic.py**: Core game logic.
+- **utils.py**: Utility functions and helpers.
