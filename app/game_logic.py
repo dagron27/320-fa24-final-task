@@ -6,6 +6,9 @@ BOARD_HEIGHT = 10
 
 class GameLogic:
     def __init__(self):
+        self.reset_game()
+
+    def reset_game(self):
         self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
         self.obstacles = []
         self.missiles = []
@@ -13,8 +16,12 @@ class GameLogic:
         self.score = 0
         self.lives = 3
         self.fuel = 100
+        self.game_running = True
 
     def update_game_state(self):
+        if not self.game_running:
+            return
+
         # Add new obstacles
         if random.random() < 0.2:
             self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0))
