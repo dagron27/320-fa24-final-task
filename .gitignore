@@ -1,1 +1,28 @@
+# Byte-compiled files
+__pycache__/
+*.pyc
+*.pyo
+*$py.class
+
+# Virtual environments
+env/
 venv/
+.venv/
+
+# Dependency management
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Logs and environment files
+*.log
+.env
+*.env
+
+# VS Code files
+.vscode/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
