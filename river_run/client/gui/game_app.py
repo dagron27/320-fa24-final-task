@@ -8,7 +8,6 @@ class GameApp(tk.Tk):
         self.title("River Raid")
         self.geometry("300x350")
         
-        # Set canvas background color to gray
         self.canvas = tk.Canvas(self, width=300, height=300, bg="gray")
         self.canvas.pack()
         
@@ -18,7 +17,7 @@ class GameApp(tk.Tk):
         self.bind("<Left>", lambda event: self.player_move("left"))
         self.bind("<Right>", lambda event: self.player_move("right"))
         self.bind("<space>", lambda event: self.player_shoot())
-        self.bind("<Return>", lambda event: self.restart_game())  # Bind Enter key to restart game
+        self.bind("<Return>", lambda event: self.restart_game()) 
         self.bind("<q>", lambda event: self.quit())
 
         self.game_logic = ClientGameLogic()
@@ -41,9 +40,7 @@ class GameApp(tk.Tk):
             self.display_game_over()
             return
 
-        # Game logic here...
         self.game_logic.update_game_state()
-
         self.update_canvas()
         self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}")
         self.after(self.tick_rate, self.game_loop)
@@ -52,19 +49,15 @@ class GameApp(tk.Tk):
         self.canvas.delete("all")
 
         if self.game_logic.game_running:
-            # Draw player
             self.canvas.create_rectangle(self.game_logic.player.x * 30, self.game_logic.player.y * 30,
                                          (self.game_logic.player.x + 1) * 30, (self.game_logic.player.y + 1) * 30, fill="blue")
 
-            # Draw obstacles
             for obs in self.game_logic.obstacles:
                 self.canvas.create_rectangle(obs.x * 30, obs.y * 30, (obs.x + 1) * 30, (obs.y + 1) * 30, fill="red")
 
-            # Draw fuel depots
             for depot in self.game_logic.fuel_depots:
                 self.canvas.create_rectangle(depot.x * 30, depot.y * 30, (depot.x + 1) * 30, (depot.y + 1) * 30, fill="green")
 
-            # Draw missiles
             for missile in self.game_logic.missiles:
                 self.canvas.create_line(missile.x * 30 + 15, missile.y * 30, missile.x * 30 + 15, (missile.y + 1) * 30, fill="yellow")
         else:

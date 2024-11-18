@@ -4,7 +4,7 @@ import json
 from server.game_logic import ServerGameLogic
 
 class GameServer:
-    def __init__(self, host='0.0.0.0', port=12345):
+    def __init__(self, host='74.208.201.216', port=43614):
         self.host = host
         self.port = port
         self.game_logic = ServerGameLogic()
