@@ -1,7 +1,7 @@
 import socket
 import threading
 import json
-from server.game_logic import ServerGameLogic
+from server.server_logic import ServerGameLogic
 
 class GameServer:
     def __init__(self, host='0.0.0.0', port=8443):

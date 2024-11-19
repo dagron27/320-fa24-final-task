@@ -1,27 +1,11 @@
-import socket
-import json
-import random
+from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, Obstacle, FuelDepot, Missile
-
-BOARD_WIDTH = 10
-BOARD_HEIGHT = 10
+from network import NetworkClient
 
 class ClientGameLogic:
-    def __init__(self, host='74.208.201.216', port=8443):
-        self.host = host
-        self.port = port
-        self.client_socket = None
-        self.connect_to_server()
+    def __init__(self, host='74.208.201.216', port=8443): 
+        self.network_client = NetworkClient(host, port) 
         self.reset_game()
-
-    def connect_to_server(self):
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect((self.host, self.port))
-
-    def send_command(self, command):
-        self.client_socket.send(json.dumps(command).encode('utf-8'))
-        response = self.client_socket.recv(1024).decode('utf-8')
-        return json.loads(response)
 
     def reset_game(self):
         self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
@@ -38,7 +22,7 @@ class ClientGameLogic:
             return
         
         # Send a command to the server to update game state
-        state = self.send_command({"action": "update_state"})
+        state = self.network_client.send_command({"action": "update_state"})
         
         # Update local game state based on the server response
         self.player.x = state["player"]["x"]
@@ -52,8 +36,8 @@ class ClientGameLogic:
 
     def player_move(self, direction):
         command = {"action": f"move_{direction}"}
-        self.send_command(command)
+        self.network_client.send_command(command)
 
     def player_shoot(self):
         command = {"action": "shoot"}
-        self.send_command(command)
+        self.network_client.send_command(command)
