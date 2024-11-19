@@ -24,7 +24,7 @@ class GameLogic:
 
         # Add new obstacles
         if random.random() < 0.2:
-            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0))
+            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1,1)))
 
         # Add new fuel depots
         if random.random() < 0.05:
@@ -32,6 +32,8 @@ class GameLogic:
 
         # Move obstacles
         for obs in self.obstacles:
+            if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH -1 ):
+                obs.direction = -obs.direction
             obs.move()
 
         # Move fuel depots
