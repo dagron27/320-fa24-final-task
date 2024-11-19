@@ -25,7 +25,6 @@ class ClientGameLogic:
 
         # Send a command to the server to update game state
         state = self.network_client.send_command({"action": "update_state"})
-        #print(f"Received updated state: {state}")
 
         # Update local game state based on the server response
         self.update_local_state(state)

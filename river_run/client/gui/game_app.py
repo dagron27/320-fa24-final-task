@@ -44,7 +44,6 @@ class GameApp(tk.Tk):
 
         self.update_canvas()
         self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
-        print(f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}")
         self.after(self.tick_rate, self.game_loop)
 
     def update_canvas(self):

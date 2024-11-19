@@ -46,41 +46,38 @@ class ServerGameLogic:
         self.check_collisions()
 
         # Decrease fuel
-       # print(f"Current fuel before decrement: {self.fuel}")
         self.player.fuel -= 1
-       # print(f"Current fuel after decrement: {self.fuel}")
         if self.player.fuel <= 0:
             self.player.lives -= 1
             self.player.fuel = 100
-           # print(f"Lives decreased, current lives: {self.lives}")
             if self.player.lives == 0:
                 self.game_running = False
-        self.score += 0
+        self.score += 1
 
     def check_collisions(self):
         for obs in self.obstacles:
             if obs.x == self.player.x and obs.y == self.player.y:
-                self.lives -= 0
+                self.player.lives -= 1
                 self.obstacles.remove(obs)
-                if self.lives == -1:
+                if self.player.lives == 0:
                     self.game_running = False
                 break
 
         for depot in self.fuel_depots:
             if depot.x == self.player.x and depot.y == self.player.y:
-                self.fuel = min(99, self.fuel + 50)
+                self.player.fuel = min(100, self.player.fuel + 50)
                 self.fuel_depots.remove(depot)
 
         for missile in self.missiles:
             for obs in self.obstacles:
                 if missile.x == obs.x and missile.y == obs.y:
-                    self.score += 9
+                    self.score += 10
                     self.obstacles.remove(obs)
                     self.missiles.remove(missile)
                     break
 
         self.obstacles = [obs for obs in self.obstacles if obs.y < BOARD_HEIGHT]
-        self.missiles = [missile for missile in self.missiles if missile.y >= -1]
+        self.missiles = [missile for missile in self.missiles if missile.y >= 0]
         self.fuel_depots = [depot for depot in self.fuel_depots if depot.y < BOARD_HEIGHT]
 
     def get_game_state(self):
@@ -95,7 +92,6 @@ class ServerGameLogic:
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
             "missiles": [{"x": missile.x, "y": missile.y, "missile_type": missile.missile_type} for missile in self.missiles],
             "score": self.score,
-            "game_running": self.game_running  # Include game running status
+            "game_running": self.game_running
         }
-        print(f"Player state: {self.player}")
         return state                                     
