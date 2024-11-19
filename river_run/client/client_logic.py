@@ -36,10 +36,10 @@ class ClientGameLogic:
     def update_game_state(self):
         if not self.game_running:
             return
-        
+
         # Send a command to the server to update game state
         state = self.send_command({"action": "update_state"})
-        
+
         # Update local game state based on the server response
         self.player.x = state["player"]["x"]
         self.player.y = state["player"]["y"]
@@ -47,8 +47,9 @@ class ClientGameLogic:
         self.lives = state["player"]["lives"]
         self.obstacles = [Obstacle(obs["x"], obs["y"]) for obs in state["obstacles"]]
         self.fuel_depots = [FuelDepot(depot["x"], depot["y"]) for depot in state["fuel_depots"]]
-        self.missiles = [Missile(missile["x"], missile["y"], missile["missile_type"]) for missile in state["missiles"]] 
+        self.missiles = [Missile(missile["x"], missile["y"], missile["missile_type"]) for missile in state["missiles"]]
         self.score = state["score"]
+        self.game_running = state["game_running"]  # Update game running status
 
     def player_move(self, direction):
         command = {"action": f"move_{direction}"}
