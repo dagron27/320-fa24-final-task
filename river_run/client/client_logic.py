@@ -29,10 +29,11 @@ class ClientGameLogic:
         self.player.y = state["player"]["y"]
         self.fuel = state["player"]["fuel"]
         self.lives = state["player"]["lives"]
-        self.obstacles = [Obstacle(obs["x"], obs["y"]) for obs in state["obstacles"]]
+        self.obstacles = [Obstacle(obs["x"], obs["y"], obs["direction"]) for obs in state["obstacles"]]
         self.fuel_depots = [FuelDepot(depot["x"], depot["y"]) for depot in state["fuel_depots"]]
         self.missiles = [Missile(missile["x"], missile["y"], missile["missile_type"]) for missile in state["missiles"]] 
         self.score = state["score"]
+        self.game_running = state["game_running"]
 
     def player_move(self, direction):
         command = {"action": f"move_{direction}"}
