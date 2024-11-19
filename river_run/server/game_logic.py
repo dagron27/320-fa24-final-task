@@ -50,7 +50,7 @@ class ServerGameLogic:
         if self.fuel <= 0:
             self.lives -= 1
             self.fuel = 100
-            if self.lives == 0:
+            if self.lives <= 0:
                 self.game_running = False
 
         self.score += 1
@@ -60,7 +60,7 @@ class ServerGameLogic:
             if obs.x == self.player.x and obs.y == self.player.y:
                 self.lives -= 1
                 self.obstacles.remove(obs)
-                if self.lives == 0:
+                if self.lives <= 0:
                     self.game_running = False
                 break
 

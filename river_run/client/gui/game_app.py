@@ -8,7 +8,7 @@ class GameApp(tk.Tk):
         self.title("River Raid")
         self.geometry("300x350")
         
-        self.canvas = tk.Canvas(self, width=300, height=300, bg="gray")
+        self.canvas = tk.Canvas(self, width=1000, height=1000, bg="gray")
         self.canvas.pack()
         
         self.info_label = tk.Label(self, text="Score: 0 | Lives: 3 | Fuel: 100")
