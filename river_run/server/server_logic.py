@@ -6,15 +6,15 @@ class ServerGameLogic:
     def __init__(self):
         self.reset_game()
 
-    def reset_game(self):
-        self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
-        self.obstacles = []
-        self.missiles = []
-        self.fuel_depots = []
-        self.score = 0
-        self.lives = 3
-        self.fuel = 100
-        self.game_running = True
+    def reset_game(game_logic):
+        game_logic.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
+        game_logic.obstacles = []
+        game_logic.missiles = []
+        game_logic.fuel_depots = []
+        game_logic.score = 0
+        game_logic.lives = 3
+        game_logic.fuel = 100
+        game_logic.game_running = True
 
     def update_game_state(self):
         if not self.game_running:

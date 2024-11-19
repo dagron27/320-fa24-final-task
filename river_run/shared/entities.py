@@ -34,6 +34,7 @@ class Obstacle:
     def move(self,):
         self.y += 1
         self.x += self.direction
+        
 class FuelDepot:
     def __init__(self, x, y):
         self.x = x

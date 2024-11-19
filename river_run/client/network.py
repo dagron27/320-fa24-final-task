@@ -12,7 +12,12 @@ class NetworkClient:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((self.host, self.port))
 
-    def send_command(self, command):
-        self.client_socket.send(json.dumps(command).encode('utf-8'))
-        response = self.client_socket.recv(1024).decode('utf-8')
-        return json.loads(response)
+def send_command(self, command):
+    print(f"Sending command: {command}")
+    self.client_socket.send(json.dumps(command).encode('utf-8'))
+    
+    response = self.client_socket.recv(1024).decode('utf-8')
+    print(f"Received response: {response}")
+    
+    return json.loads(response)
+
