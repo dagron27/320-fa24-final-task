@@ -1,8 +1,8 @@
 import random
 from shared.entities import Player, Obstacle, FuelDepot, Missile
 
-BOARD_WIDTH = 25
-BOARD_HEIGHT = 25
+BOARD_WIDTH = 10
+BOARD_HEIGHT = 10
 
 class ServerGameLogic:
     def __init__(self):
@@ -24,7 +24,7 @@ class ServerGameLogic:
 
         # Add new obstacles
         if random.random() < 0.2:
-            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1, 1)))
+            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0))
 
         # Add new fuel depots
         if random.random() < 0.05:
@@ -32,8 +32,6 @@ class ServerGameLogic:
 
         # Move obstacles
         for obs in self.obstacles:
-            if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH - 1):
-                obs.direction = -obs.direction
             obs.move()
 
         # Move fuel depots
@@ -94,7 +92,6 @@ class ServerGameLogic:
             "obstacles": [{"x": obs.x, "y": obs.y} for obs in self.obstacles],
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
             "missiles": [{"x": missile.x, "y": missile.y, "missile_type": missile.missile_type} for missile in self.missiles],
-            "score": self.score,
-            "game_running": self.game_running  # Include game running status
+            "score": self.score
         }
         return state
