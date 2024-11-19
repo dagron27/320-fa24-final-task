@@ -22,7 +22,7 @@ class ServerGameLogic:
 
         # Add new obstacles
         if random.random() < 0.2:
-            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0))
+            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1,1)))
 
         # Add new fuel depots
         if random.random() < 0.05:
@@ -30,6 +30,8 @@ class ServerGameLogic:
 
         # Move obstacles
         for obs in self.obstacles:
+            if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH -1 ):
+                obs.direction = -obs.direction
             obs.move()
 
         # Move fuel depots
@@ -48,7 +50,7 @@ class ServerGameLogic:
         if self.fuel <= 0:
             self.lives -= 1
             self.fuel = 100
-            if self.lives <= 0:
+            if self.lives == 0:
                 self.game_running = False
 
         self.score += 1
@@ -58,7 +60,7 @@ class ServerGameLogic:
             if obs.x == self.player.x and obs.y == self.player.y:
                 self.lives -= 1
                 self.obstacles.remove(obs)
-                if self.lives <= 0:
+                if self.lives == 0:
                     self.game_running = False
                 break
 
@@ -90,6 +92,7 @@ class ServerGameLogic:
             "obstacles": [{"x": obs.x, "y": obs.y} for obs in self.obstacles],
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
             "missiles": [{"x": missile.x, "y": missile.y, "missile_type": missile.missile_type} for missile in self.missiles],
-            "score": self.score
+            "score": self.score,
+            "game_running": self.game_running  # Include game running status
         }
         return state

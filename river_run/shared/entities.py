@@ -11,7 +11,7 @@ class Player:
 
     def move(self, direction):
         if direction == "left":
-            self.x = max(0 + 1, self.x - 1)
+            self.x = max(0, self.x - 1)
         elif direction == "right":
             self.x = min(BOARD_WIDTH - 0.75, self.x + 1)
         elif direction == "accelerate":
