@@ -4,7 +4,7 @@ import json
 from server.game_logic import ServerGameLogic
 
 class GameServer:
-    def __init__(self, host='74.208.201.216', port=43614):
+    def __init__(self, host='0.0.0.0', port=8443):
         self.host = host
         self.port = port
         self.game_logic = ServerGameLogic()
@@ -35,7 +35,7 @@ class GameServer:
                 self.process_command(player_command)
 
                 # Send updated game state back to client
-                updated_state = self.get_game_state()
+                updated_state = self.game_logic.get_game_state()  # Use the method from game_logic
                 client_socket.send(json.dumps(updated_state).encode('utf-8'))
             except ConnectionResetError:
                 break

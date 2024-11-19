@@ -80,3 +80,18 @@ class ServerGameLogic:
         self.obstacles = [obs for obs in self.obstacles if obs.y < BOARD_HEIGHT]
         self.missiles = [missile for missile in self.missiles if missile.y >= 0]
         self.fuel_depots = [depot for depot in self.fuel_depots if depot.y < BOARD_HEIGHT]
+
+    def get_game_state(self):
+        state = {
+            "player": {
+                "x": self.player.x,
+                "y": self.player.y,
+                "fuel": self.player.fuel,
+                "lives": self.player.lives
+            },
+            "obstacles": [{"x": obs.x, "y": obs.y} for obs in self.obstacles],
+            "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
+            "missiles": [{"x": missile.x, "y": missile.y, "missile_type": missile.missile_type} for missile in self.missiles],
+            "score": self.score
+        }
+        return state

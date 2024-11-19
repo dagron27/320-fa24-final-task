@@ -7,7 +7,7 @@ BOARD_WIDTH = 10
 BOARD_HEIGHT = 10
 
 class ClientGameLogic:
-    def __init__(self, host='74.208.201.216', port=43614):
+    def __init__(self, host='74.208.201.216', port=8443):
         self.host = host
         self.port = port
         self.client_socket = None
@@ -47,7 +47,7 @@ class ClientGameLogic:
         self.lives = state["player"]["lives"]
         self.obstacles = [Obstacle(obs["x"], obs["y"]) for obs in state["obstacles"]]
         self.fuel_depots = [FuelDepot(depot["x"], depot["y"]) for depot in state["fuel_depots"]]
-        self.missiles = [Missile(missile["x"], missile["y"]) for missile in state["missiles"]]
+        self.missiles = [Missile(missile["x"], missile["y"], missile["missile_type"]) for missile in state["missiles"]] 
         self.score = state["score"]
 
     def player_move(self, direction):
