@@ -36,6 +36,7 @@ class GameServer:
 
                 # Send updated game state back to client
                 updated_state = self.game_logic.get_game_state()  # Use the method from game_logic
+                #print(f"Sending updated state:{ updated_state}")
                 client_socket.send(json.dumps(updated_state).encode('utf-8'))
             except ConnectionResetError:
                 break
@@ -50,6 +51,8 @@ class GameServer:
         elif action == "shoot":
             missile = self.game_logic.player.shoot()
             self.game_logic.missiles.append(missile)
+        elif action == "reset_game":
+            self.game_logic.reset_game()
         self.game_logic.update_game_state()
 
 #    def get_game_state(self):

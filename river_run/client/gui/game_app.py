@@ -1,9 +1,8 @@
 import tkinter as tk
-from shared.entities import Player, Obstacle, FuelDepot, Missile
-from client.client_logic import ClientGameLogic
+from client_logic import ClientGameLogic
 
 class GameApp(tk.Tk):
-    def __init__(self):
+    def __init__(self, host='74.208.201.216', port=8443):
         super().__init__()
         self.title("River Raid")
         self.geometry("1000x1000")
@@ -21,48 +20,48 @@ class GameApp(tk.Tk):
         self.bind("<Return>", lambda event: self.restart_game())  # Bind Enter key to restart game
         self.bind("<q>", lambda event: self.quit())
 
-        self.client_logic = ClientGameLogic()
+        self.game_logic = ClientGameLogic(host, port)
         self.tick_rate = 200
 
         self.game_loop()
 
     def player_move(self, direction):
-        if self.client_logic.game_running:
-            self.client_logic.player.move(direction)
+        if self.game_logic.game_running:
+            self.game_logic.player_move(direction)
             self.update_canvas()
 
     def player_shoot(self):
-        if self.client_logic.game_running:
-            missile = self.client_logic.player.shoot()
-            self.client_logic.missiles.append(missile)
+        if self.game_logic.game_running:
+            self.game_logic.player_shoot()
 
     def game_loop(self):
-        if not self.client_logic.game_running:
+        if not self.game_logic.game_running:
             self.display_game_over()
             return
 
-        # Game logic here...
-        self.client_logic.update_game_state()
+        # Update the game state from the server
+        self.game_logic.update_game_state()
 
         self.update_canvas()
-        self.info_label.config(text=f"Score: {self.client_logic.score} | Lives: {self.client_logic.lives} | Fuel: {self.client_logic.fuel}", font=("Helvetica", 25))
+        self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
+        print(f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}")
         self.after(self.tick_rate, self.game_loop)
 
     def update_canvas(self):
         self.canvas.delete("all")
 
-        if self.client_logic.game_running:
+        if self.game_logic.game_running:
             # Draw player
             self.canvas.create_rectangle(
-                self.client_logic.player.x * 30,
-                self.client_logic.player.y * 30,
-                (self.client_logic.player.x + 1) * 30,
-                (self.client_logic.player.y + 1) * 30,
+                self.game_logic.player.x * 30,
+                self.game_logic.player.y * 30,
+                (self.game_logic.player.x + 1) * 30,
+                (self.game_logic.player.y + 1) * 30,
                 fill="blue"
             )
 
             # Draw obstacles
-            for obs in self.client_logic.obstacles:
+            for obs in self.game_logic.obstacles:
                 self.canvas.create_rectangle(
                     obs.x * 30,
                     obs.y * 30,
@@ -72,7 +71,7 @@ class GameApp(tk.Tk):
                 )
 
             # Draw fuel depots
-            for depot in self.client_logic.fuel_depots:
+            for depot in self.game_logic.fuel_depots:
                 self.canvas.create_rectangle(
                     depot.x * 30,
                     depot.y * 30,
@@ -82,7 +81,7 @@ class GameApp(tk.Tk):
                 )
 
             # Draw missiles
-            for missile in self.client_logic.missiles:
+            for missile in self.game_logic.missiles:
                 self.canvas.create_line(
                     missile.x * 30 + 15,
                     missile.y * 30,
@@ -95,11 +94,13 @@ class GameApp(tk.Tk):
 
     def display_game_over(self):
         self.canvas.delete("all")
-        self.canvas.create_text((1000/2), (950/2), text="Game Over", fill="red", font=("Helvetica", 100))
-        self.info_label.config(text=f"Final Score: {self.client_logic.score}")
+        self.canvas.create_text((1000 / 2), (950 / 2), text="Game Over", fill="red", font=("Helvetica", 100))
+        self.info_label.config(text=f"Final Score: {self.game_logic.score}")
 
     def restart_game(self):
-        if not self.client_logic.game_running:
-            self.client_logic.reset_game()
+        if not self.game_logic.game_running:
+            self.game_logic.reset_server_game()
+            initial_state = self.game_logic.fetch_initial_state()
+            self.game_logic.reset_game(initial_state)
             self.info_label.config(text="Score: 0 | Lives: 3 | Fuel: 100")
             self.game_loop()

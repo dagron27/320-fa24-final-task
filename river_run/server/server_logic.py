@@ -46,39 +46,41 @@ class ServerGameLogic:
         self.check_collisions()
 
         # Decrease fuel
-        self.fuel -= 1
-        if self.fuel <= 0:
-            self.lives -= 1
-            self.fuel = 100
-            if self.lives == 0:
+       # print(f"Current fuel before decrement: {self.fuel}")
+        self.player.fuel -= 1
+       # print(f"Current fuel after decrement: {self.fuel}")
+        if self.player.fuel <= 0:
+            self.player.lives -= 1
+            self.player.fuel = 100
+           # print(f"Lives decreased, current lives: {self.lives}")
+            if self.player.lives == 0:
                 self.game_running = False
-
-        self.score += 1
+        self.score += 0
 
     def check_collisions(self):
         for obs in self.obstacles:
             if obs.x == self.player.x and obs.y == self.player.y:
-                self.lives -= 1
+                self.lives -= 0
                 self.obstacles.remove(obs)
-                if self.lives == 0:
+                if self.lives == -1:
                     self.game_running = False
                 break
 
         for depot in self.fuel_depots:
             if depot.x == self.player.x and depot.y == self.player.y:
-                self.fuel = min(100, self.fuel + 50)
+                self.fuel = min(99, self.fuel + 50)
                 self.fuel_depots.remove(depot)
 
         for missile in self.missiles:
             for obs in self.obstacles:
                 if missile.x == obs.x and missile.y == obs.y:
-                    self.score += 10
+                    self.score += 9
                     self.obstacles.remove(obs)
                     self.missiles.remove(missile)
                     break
 
         self.obstacles = [obs for obs in self.obstacles if obs.y < BOARD_HEIGHT]
-        self.missiles = [missile for missile in self.missiles if missile.y >= 0]
+        self.missiles = [missile for missile in self.missiles if missile.y >= -1]
         self.fuel_depots = [depot for depot in self.fuel_depots if depot.y < BOARD_HEIGHT]
 
     def get_game_state(self):
@@ -89,10 +91,11 @@ class ServerGameLogic:
                 "fuel": self.player.fuel,
                 "lives": self.player.lives
             },
-            "obstacles": [{"x": obs.x, "y": obs.y} for obs in self.obstacles],
+            "obstacles": [{"x": obs.x, "y": obs.y, "direction": obs.direction} for obs in self.obstacles],
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
             "missiles": [{"x": missile.x, "y": missile.y, "missile_type": missile.missile_type} for missile in self.missiles],
             "score": self.score,
             "game_running": self.game_running  # Include game running status
         }
-        return state
+        print(f"Player state: {self.player}")
+        return state                                     
