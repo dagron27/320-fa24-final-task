@@ -1,4 +1,4 @@
-from config import BOARD_WIDTH
+from shared.config import BOARD_WIDTH
 
 class Player:
     def __init__(self, x, y):
