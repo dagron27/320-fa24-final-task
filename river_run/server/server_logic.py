@@ -1,22 +1,20 @@
 import random
+from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, Obstacle, FuelDepot, Missile
-
-BOARD_WIDTH = 10
-BOARD_HEIGHT = 10
 
 class ServerGameLogic:
     def __init__(self):
         self.reset_game()
 
-    def reset_game(self):
-        self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
-        self.obstacles = []
-        self.missiles = []
-        self.fuel_depots = []
-        self.score = 0
-        self.lives = 3
-        self.fuel = 100
-        self.game_running = True
+    def reset_game(game_logic):
+        game_logic.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
+        game_logic.obstacles = []
+        game_logic.missiles = []
+        game_logic.fuel_depots = []
+        game_logic.score = 0
+        game_logic.lives = 3
+        game_logic.fuel = 100
+        game_logic.game_running = True
 
     def update_game_state(self):
         if not self.game_running:
@@ -24,7 +22,7 @@ class ServerGameLogic:
 
         # Add new obstacles
         if random.random() < 0.2:
-            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0))
+            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1,1)))
 
         # Add new fuel depots
         if random.random() < 0.05:
@@ -32,6 +30,8 @@ class ServerGameLogic:
 
         # Move obstacles
         for obs in self.obstacles:
+            if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH -1 ):
+                obs.direction = -obs.direction
             obs.move()
 
         # Move fuel depots
@@ -46,27 +46,26 @@ class ServerGameLogic:
         self.check_collisions()
 
         # Decrease fuel
-        self.fuel -= 1
-        if self.fuel <= 0:
-            self.lives -= 1
-            self.fuel = 100
-            if self.lives == 0:
+        self.player.fuel -= 1
+        if self.player.fuel <= 0:
+            self.player.lives -= 1
+            self.player.fuel = 100
+            if self.player.lives == 0:
                 self.game_running = False
-
         self.score += 1
 
     def check_collisions(self):
         for obs in self.obstacles:
             if obs.x == self.player.x and obs.y == self.player.y:
-                self.lives -= 1
+                self.player.lives -= 1
                 self.obstacles.remove(obs)
-                if self.lives == 0:
+                if self.player.lives == 0:
                     self.game_running = False
                 break
 
         for depot in self.fuel_depots:
             if depot.x == self.player.x and depot.y == self.player.y:
-                self.fuel = min(100, self.fuel + 50)
+                self.player.fuel = min(100, self.player.fuel + 50)
                 self.fuel_depots.remove(depot)
 
         for missile in self.missiles:
@@ -89,9 +88,10 @@ class ServerGameLogic:
                 "fuel": self.player.fuel,
                 "lives": self.player.lives
             },
-            "obstacles": [{"x": obs.x, "y": obs.y} for obs in self.obstacles],
+            "obstacles": [{"x": obs.x, "y": obs.y, "direction": obs.direction} for obs in self.obstacles],
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
             "missiles": [{"x": missile.x, "y": missile.y, "missile_type": missile.missile_type} for missile in self.missiles],
-            "score": self.score
+            "score": self.score,
+            "game_running": self.game_running
         }
-        return state
+        return state                                     

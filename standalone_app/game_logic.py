@@ -1,8 +1,6 @@
 import random
+from config import BOARD_WIDTH, BOARD_HEIGHT
 from entities import Player, Obstacle, FuelDepot, Missile
-
-BOARD_WIDTH = 10
-BOARD_HEIGHT = 10
 
 class GameLogic:
     def __init__(self):
