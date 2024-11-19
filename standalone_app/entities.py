@@ -24,13 +24,14 @@ class Player:
         self.missile_type = "guided" if self.missile_type == "straight" else "straight"
 
 class Obstacle:
-    def __init__(self, x, y):
+    def __init__(self, x, y, direct):
         self.x = x
         self.y = y
+        self.direction = direct
 
-    def move(self):
+    def move(self,):
         self.y += 1
-
+        self.x += self.direction
 class FuelDepot:
     def __init__(self, x, y):
         self.x = x
