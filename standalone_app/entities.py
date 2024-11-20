@@ -6,7 +6,7 @@ class Player:
         self.y = y
         self.fuel = 100
         self.lives = 3
-        self.speed = .1  # game speed
+        self.speed = 1  # game speed
         self.missile_type = "straight"
 
     def move(self, direction):

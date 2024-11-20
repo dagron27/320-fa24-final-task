@@ -17,7 +17,6 @@ class GameLogic:
         self.lives = 3
         self.fuel = 100
         self.game_running = True
-        self.movement_rate = .5
         self.mutex_lock = threading.Lock()
         self.movement_thread = threading.Thread(target=self.move_obstacles)
         self.movement_thread.start()
@@ -51,6 +50,8 @@ class GameLogic:
             print("moveing Obstacles")
             with self.mutex_lock:
                 print("in lock")
+
+                #move missiles
                 for missile in self.missiles:
                     missile.move()
 
@@ -63,7 +64,6 @@ class GameLogic:
                 for depot in self.fuel_depots:
                     depot.move()
 
-                # Move missiles
                
                 
                 self.check_collisions()
