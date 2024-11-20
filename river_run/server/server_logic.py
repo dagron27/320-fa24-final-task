@@ -94,4 +94,4 @@ class ServerGameLogic:
             "score": self.score,
             "game_running": self.game_running
         }
-        return state                                     
+        return state

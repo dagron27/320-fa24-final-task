@@ -1,8 +1,13 @@
 import tkinter as tk
 from client_logic import ClientGameLogic
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(dotenv_path='client/.env')
 
 class GameApp(tk.Tk):
-    def __init__(self, host='74.208.201.216', port=8443):
+    def __init__(self):
         super().__init__()
         self.title("River Raid")
         self.geometry("1000x1000")
@@ -20,7 +25,13 @@ class GameApp(tk.Tk):
         self.bind("<Return>", lambda event: self.restart_game())  # Bind Enter key to restart game
         self.bind("<q>", lambda event: self.quit())
 
-        self.game_logic = ClientGameLogic(host, port)
+        # Load environment variables
+        host = os.getenv('CLIENT_HOST')
+        port = int(os.getenv('CLIENT_PORT', 22))
+        username = os.getenv('CLIENT_USERNAME')
+        key_filename = os.getenv('CLIENT_KEY_FILENAME')
+
+        self.game_logic = ClientGameLogic(host, port, username, key_filename)
         self.tick_rate = 200
 
         self.game_loop()

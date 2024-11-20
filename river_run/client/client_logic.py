@@ -1,10 +1,19 @@
-from shared.config import BOARD_WIDTH, BOARD_HEIGHT
+from dotenv import load_dotenv
+import os
 from shared.entities import Player, Obstacle, FuelDepot, Missile
 from network import NetworkClient
 
+# Load environment variables from .env file
+load_dotenv(dotenv_path='client/.env')
+
 class ClientGameLogic:
-    def __init__(self, host='127.0.0.1', port=8443):
-        self.network_client = NetworkClient(host, port)
+    def __init__(self, host='', port=22, username='', key_filename=''):
+        host = os.getenv('CLIENT_HOST')
+        port = int(os.getenv('CLIENT_PORT', port))
+        username = os.getenv('CLIENT_USERNAME')
+        key_filename = os.getenv('CLIENT_KEY_FILENAME')
+        
+        self.network_client = NetworkClient(host, port, username, key_filename)
         initial_state = self.network_client.send_command({"action": "get_initial_state"})
         self.reset_game(initial_state)
 
