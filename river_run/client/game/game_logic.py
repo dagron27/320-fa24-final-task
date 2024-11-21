@@ -1,8 +1,9 @@
-from config import BOARD_WIDTH, BOARD_HEIGHT
+from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, Obstacle, FuelDepot, Missile
 
 class ClientGameLogic:
-    def __init__(self):
+    def __init__(self, client):
+        self.client = client
         self.reset_game()
 
     def reset_game(self):
@@ -16,10 +17,6 @@ class ClientGameLogic:
         self.game_running = True
 
     def update_game_state(self, game_state):
-        """
-        Update the game state based on the server's response.
-        :param game_state: A dictionary containing the updated game state.
-        """
         self.player.x = game_state['player']['x']
         self.player.y = game_state['player']['y']
         self.obstacles = [Obstacle(obs['x'], obs['y'], obs['direction']) for obs in game_state['obstacles']]
@@ -31,9 +28,15 @@ class ClientGameLogic:
         self.game_running = game_state['game_running']
 
     def player_move(self, direction):
-        # Send move command to the server
-        pass
+        if self.game_running:
+            move_message = {"action": "move", "direction": direction}
+            self.client.send_message(move_message)
+            response = self.client.receive_message()
+            self.update_game_state(response['game_state'])
 
     def player_shoot(self):
-        # Send shoot command to the server
-        pass
+        if self.game_running:
+            shoot_message = {"action": "shoot"}
+            self.client.send_message(shoot_message)
+            response = self.client.receive_message()
+            self.update_game_state(response['game_state'])

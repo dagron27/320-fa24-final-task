@@ -2,7 +2,7 @@ import tkinter as tk
 from game.game_logic import ClientGameLogic
 
 class GameApp(tk.Tk):
-    def __init__(self):
+    def __init__(self, client):
         super().__init__()
         self.title("River Raid")
         self.geometry("1000x1000")
@@ -20,7 +20,8 @@ class GameApp(tk.Tk):
         self.bind("<Return>", lambda event: self.restart_game())
         self.bind("<q>", lambda event: self.quit())
 
-        self.game_logic = ClientGameLogic()
+        self.client = client
+        self.game_logic = ClientGameLogic(client)
         self.tick_rate = 200
 
         self.game_loop()
@@ -39,9 +40,11 @@ class GameApp(tk.Tk):
             self.display_game_over()
             return
 
-        # Game logic here...
-        # For simplicity, we assume update_game_state will be called with the latest game state from the server.
-        # self.game_logic.update_game_state(latest_game_state_from_server)
+        # Fetch the latest game state from the server
+        self.client.send_message({"action": "get_game_state"})
+        response = self.client.receive_message()
+        if response['status'] == 'ok':
+            self.game_logic.update_game_state(response['game_state'])
 
         self.update_canvas()
         self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
