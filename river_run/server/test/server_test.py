@@ -1,4 +1,4 @@
-from server.network import ServerNetwork
+from river_run.server.network.network import ServerNetwork
 
 if __name__ == "__main__":
     server = ServerNetwork()

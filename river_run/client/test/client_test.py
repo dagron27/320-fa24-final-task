@@ -1,6 +1,6 @@
 # client/test_client.py
 
-from client.network import ClientNetwork
+from river_run.client.network.network import ClientNetwork
 
 if __name__ == "__main__":
     client = ClientNetwork()
