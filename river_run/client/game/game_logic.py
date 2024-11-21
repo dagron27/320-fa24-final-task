@@ -1,44 +1,39 @@
-class GameLogic:
-    def __init__(self, client):
+from config import BOARD_WIDTH, BOARD_HEIGHT
+from shared.entities import Player, Obstacle, FuelDepot, Missile
+
+class ClientGameLogic:
+    def __init__(self):
+        self.reset_game()
+
+    def reset_game(self):
+        self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
+        self.obstacles = []
+        self.missiles = []
+        self.fuel_depots = []
+        self.score = 0
+        self.lives = 3
+        self.fuel = 100
+        self.game_running = True
+
+    def update_game_state(self, game_state):
         """
-        Initialize the GameLogic instance.
-        :param client: An instance of ClientNetwork to handle communication.
+        Update the game state based on the server's response.
+        :param game_state: A dictionary containing the updated game state.
         """
-        self.client = client
+        self.player.x = game_state['player']['x']
+        self.player.y = game_state['player']['y']
+        self.obstacles = [Obstacle(obs['x'], obs['y'], obs['direction']) for obs in game_state['obstacles']]
+        self.missiles = [Missile(missile['x'], missile['y'], missile['type']) for missile in game_state['missiles']]
+        self.fuel_depots = [FuelDepot(depot['x'], depot['y']) for depot in game_state['fuel_depots']]
+        self.score = game_state['score']
+        self.lives = game_state['lives']
+        self.fuel = game_state['fuel']
+        self.game_running = game_state['game_running']
 
-    def start_game(self):
-        """
-        Handles starting and running the game logic.
-        """
-        try:
-            # Send a command to start the game
-            print(1)
-            start_message = {"action": "start"}
-            print(2)
-            self.client.send_message(start_message)
+    def player_move(self, direction):
+        # Send move command to the server
+        pass
 
-            # Receive server response
-            print(3)
-            response = self.client.receive_message()
-            print(4)
-            print(f"Server response: {response}")
-
-            # Send an update command
-            print(5)
-            update_message = {"action": "update", "command": "move player"}
-            print(6)
-            self.client.send_message(update_message)
-
-            # Receive server response
-            print(7)
-            response = self.client.receive_message()
-            print(8)
-            print(f"Server response: {response}")
-
-            # Notify the server that the client program is closed
-            update_message = {"action": "Client program closed"}
-            print(9)
-            self.client.send_message(update_message)
-
-        except Exception as e:
-            print(f"An error occurred in the game logic: {e}")
+    def player_shoot(self):
+        # Send shoot command to the server
+        pass

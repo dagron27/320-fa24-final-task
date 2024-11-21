@@ -38,11 +38,11 @@ class ClientNetwork:
         self.ssh_client.close()
         print("SSH connection closed")
 
-if __name__ == "__main__":
-    client = ClientNetwork()
-    client.connect()
-    client.send_message({"action": "start"})
-    print(f"Server response: {client.receive_message()}")
-    client.send_message({"action": "update", "command": "move player"})
-    print(f"Server response: {client.receive_message()}")
-    client.close()
+#if __name__ == "__main__":
+#    client = ClientNetwork()
+#    client.connect()
+#    client.send_message({"action": "start"})
+#    print(f"Server response: {client.receive_message()}")
+#    client.send_message({"action": "update", "command": "move player"})
+#    print(f"Server response: {client.receive_message()}")
+#    client.close()

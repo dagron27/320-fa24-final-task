@@ -49,6 +49,6 @@ class ServerNetwork:
             self.sock.close()
             print("Server service closed")
 
-if __name__ == "__main__":
-    server = ServerNetwork()
-    server.start_service()
+#if __name__ == "__main__":
+#    server = ServerNetwork()
+#    server.start_service()
