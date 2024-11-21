@@ -4,19 +4,21 @@ from shared.entities import Player, Obstacle, FuelDepot, Missile
 from network import NetworkClient
 
 # Load environment variables from .env file
-load_dotenv(dotenv_path='client/.env')
+load_dotenv()
 
 class ClientGameLogic:
     def __init__(self, host='', port=22, username='', key_filename=''):
         host = os.getenv('CLIENT_HOST')
         port = int(os.getenv('CLIENT_PORT', port))
         username = os.getenv('CLIENT_USERNAME')
-        key_filename = os.getenv('CLIENT_KEY_FILENAME')
-        
+        key_filename = os.path.expanduser(os.getenv('CLIENT_KEY_FILENAME'))
         self.network_client = NetworkClient(host, port, username, key_filename)
+        print(1)
         initial_state = self.network_client.send_command({"action": "get_initial_state"})
+        print(2)
         self.reset_game(initial_state)
-
+        print(3)
+        
     def reset_game(self, initial_state):
         print("game reset")
         self.player = Player(initial_state["player"]["x"], initial_state["player"]["y"])

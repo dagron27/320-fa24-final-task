@@ -1,5 +1,5 @@
 import tkinter as tk
-from client_logic import ClientGameLogic
+from client.client_logic import ClientGameLogic
 import os
 from dotenv import load_dotenv
 
