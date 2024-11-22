@@ -8,8 +8,11 @@ class Player:
         self.y = y
         self.fuel = 100
         self.lives = 3
-        self.speed = 1  # Game speed
+        self.speed = 1
         self.missile_type = "straight"
+        self.width = 30
+        self.height = 30
+        self.color = "blue"
 
     def move(self, direction):
         if direction == "left":
@@ -27,7 +30,6 @@ class Player:
     def switch_missile(self):
         self.missile_type = "guided" if self.missile_type == "straight" else "straight"
 
-
 class Enemy(threading.Thread):
     def __init__(self, x, y, enemy_type, game_logic):
         super().__init__()
@@ -37,12 +39,15 @@ class Enemy(threading.Thread):
         self.game_logic = game_logic
         self.running = True
         self.lock = threading.Lock()
+        self.width = 30
+        self.height = 30
+        self.color = "red"
 
     def run(self):
         while self.running:
             with self.lock:
                 self.move()
-            time.sleep(0.2)  # Adjust sleep time to slow down enemy behavior
+            time.sleep(0.2)
 
     def move(self):
         raise NotImplementedError("This method should be overridden by subclasses")
@@ -50,6 +55,9 @@ class Enemy(threading.Thread):
 class EnemyB(Enemy):
     def __init__(self, x, y, game_logic):
         super().__init__(x, y, "B", game_logic)
+        self.width = 80
+        self.height = 20
+        self.color = "purple"
 
     def move(self):
         self.y += 1  # Boats move down the river
@@ -59,7 +67,10 @@ class EnemyB(Enemy):
 class EnemyJ(Enemy):
     def __init__(self, x, y, game_logic):
         super().__init__(x, y, "J", game_logic)
-        self.direction = 0  # Jets can move diagonally
+        self.width = 20
+        self.height = 50
+        self.color = "orange"
+        self.direction = 0
 
     def move(self):
         self.y += 1.5  # Jets move faster
@@ -70,7 +81,10 @@ class EnemyJ(Enemy):
 class EnemyH(Enemy):
     def __init__(self, x, y, game_logic):
         super().__init__(x, y, "H", game_logic)
-        self.direction = 0  # Helicopters can hover and move in any direction
+        self.width = 40
+        self.height = 25
+        self.color = "white"
+        self.direction = 0
 
     def move(self):
         self.y += 1  # Helicopters move vertically
@@ -82,6 +96,9 @@ class FuelDepot:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.width = 30
+        self.height = 30
+        self.color = "green"
 
     def move(self):
         self.y += 1
@@ -91,6 +108,9 @@ class Missile:
         self.x = x
         self.y = y
         self.missile_type = missile_type
+        self.width = 2
+        self.height = 30
+        self.color = "yellow"
 
     def move(self):
         self.y -= 1  # Straight missiles move up

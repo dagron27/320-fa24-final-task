@@ -36,6 +36,11 @@ class ServerGameLogic:
                 self.enemy_threads.append(enemy)
                 enemy.start()
 
+            # Move missiles
+            for missile in self.missiles:
+                missile.move()
+
+            # Move fuel depots
             for depot in self.fuel_depots:
                 depot.move()
 
@@ -57,7 +62,7 @@ class ServerGameLogic:
         with self.game_state_lock:
             for enemy in self.enemies[:]:
                 if self.is_colliding(self.player, enemy):
-                    print(f"Collision detected with player at ({self.player.x}, {self.player.y}) and enemy at ({enemy.x}, {enemy.y})")
+                    print(f"Collision detected - Enemy Type: {enemy.type} - Player at ({self.player.x}, {self.player.y}) and enemy at ({enemy.x}, {enemy.y})")
                     self.lives -= 1
                     self.enemies.remove(enemy)
                     enemy.running = False
@@ -77,7 +82,7 @@ class ServerGameLogic:
             for missile in self.missiles[:]:
                 for enemy in self.enemies[:]:
                     if self.is_colliding(missile, enemy):
-                        print(f"Collision detected with missile at ({missile.x}, {missile.y}) and enemy at ({enemy.x}, {enemy.y})")
+                        print(f"Collision detected - Missile hit Enemy Type: {enemy.type} at ({enemy.x}, {enemy.y})")
                         self.score += 10
                         self.enemies.remove(enemy)
                         enemy.running = False
@@ -89,10 +94,15 @@ class ServerGameLogic:
             self.fuel_depots = [depot for depot in self.fuel_depots if depot.y < BOARD_HEIGHT]
 
     def is_colliding(self, entity1, entity2):
-        return (entity1.x < entity2.x + 1 and
-                entity1.x + 1 > entity2.x and
-                entity1.y < entity2.y + 1 and
-                entity1.y + 1 > entity2.y)
+        width1 = getattr(entity1, 'width', 30) / self.scale
+        height1 = getattr(entity1, 'height', 30) / self.scale
+        width2 = getattr(entity2, 'width', 30) / self.scale
+        height2 = getattr(entity2, 'height', 30) / self.scale
+        
+        return (entity1.x < entity2.x + width2 and
+                entity1.x + width1 > entity2.x and
+                entity1.y < entity2.y + height2 and
+                entity1.y + height1 > entity2.y)
 
     def process_message(self, message):
         action = message.get("action")
@@ -129,3 +139,7 @@ class ServerGameLogic:
                 "fuel": self.fuel,
                 "game_running": self.game_running,
             }
+
+    @property
+    def scale(self):
+        return 30

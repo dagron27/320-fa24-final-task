@@ -4,67 +4,60 @@ class GameCanvas(tk.Canvas):
     def __init__(self, parent, game_logic):
         super().__init__(parent, width=1000, height=950, bg="gray")
         self.game_logic = game_logic
+        self.scale = 30  # Define scaling factor
+        self.width = 1000
+        self.height = 950
         self.pack()
 
     def update_canvas(self):
         self.delete("all")
         if self.game_logic.game_running:
-            self.create_rectangle(
-                self.game_logic.player.x * 30,
-                self.game_logic.player.y * 30,
-                (self.game_logic.player.x + 1) * 30,
-                (self.game_logic.player.y + 1) * 30,
-                fill="blue"
-            )
+            # Draw player
+            self._draw_entity(self.game_logic.player)
 
+            # Draw fuel depots
             for depot in self.game_logic.fuel_depots:
-                self.create_rectangle(
-                    depot.x * 30,
-                    depot.y * 30,
-                    (depot.x + 1) * 30,
-                    (depot.y + 1) * 30,
-                    fill="green"
-                )
+                self._draw_entity(depot)
 
+            # Draw missiles
             for missile in self.game_logic.missiles:
-                self.create_line(
-                    missile.x * 30 + 15,
-                    missile.y * 30,
-                    missile.x * 30 + 15,
-                    (missile.y + 1) * 30,
-                    fill="yellow"
-                )
+                self._draw_missile(missile)
 
-            # Add specific enemies with different sizes and colors 
-            for enemy in self.game_logic.enemies: 
-                color = "red" # Default color for enemy 
-                width = 30 
-                height = 30 
-                
-                if enemy.type == "B": 
-                    color = "purple" # Boats 
-                    width = 80 
-                    height = 20 
-                elif enemy.type == "J": 
-                    color = "orange" # Jets 
-                    width = 20 
-                    height = 50 
-                elif enemy.type == "H": 
-                    color = "white" # Helicopters 
-                    width = 40 
-                    height = 25 
-                    
-                self.create_rectangle( 
-                    enemy.x * 30, 
-                    enemy.y * 30, 
-                    enemy.x * 30 + width, 
-                    enemy.y * 30 + height, 
-                    fill=color 
-                )
-
+            # Draw enemies
+            for enemy in self.game_logic.enemies:
+                self._draw_entity(enemy)
         else:
             self.display_game_over()
 
+    def _draw_entity(self, entity):
+        """Draw a rectangular entity (player, enemies, fuel depots)"""
+        self.create_rectangle(
+            entity.x * self.scale,
+            entity.y * self.scale,
+            entity.x * self.scale + entity.width,
+            entity.y * self.scale + entity.height,
+            fill=entity.color
+        )
+
+    def _draw_missile(self, missile):
+        """Draw a missile as a vertical line"""
+        center_x = missile.x * self.scale + (missile.width/2)
+        self.create_line(
+            center_x,
+            missile.y * self.scale,
+            center_x,
+            missile.y * self.scale + missile.height,
+            fill=missile.color,
+            width=missile.width
+        )
+
     def display_game_over(self):
+        """Display game over screen"""
         self.delete("all")
-        self.create_text((1000/2), (950/2), text="Game Over", fill="red", font=("Helvetica", 100))
+        self.create_text(
+            self.width/2,
+            self.height/2,
+            text="Game Over",
+            fill="red",
+            font=("Helvetica", 100)
+        )
