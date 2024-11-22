@@ -11,6 +11,7 @@ class ServerGameLogic:
         self.missiles = []
         self.fuel_depots = []
         self.enemies = []
+        self.enemy_threads = []  # Keep track of enemy threads
         self.score = 0
         self.lives = 3
         self.fuel = 100
@@ -20,20 +21,22 @@ class ServerGameLogic:
         if not self.game_running:
             return
 
-        # Add new fuel depots and enemies
+        # Add new fuel depots
         if random.random() < 0.05:
             self.fuel_depots.append(FuelDepot(random.randint(0, BOARD_WIDTH - 1), 0))
+        
+        # Add new enemies and start their threads
         if random.random() < 0.1:
+            x = random.randint(0, BOARD_WIDTH - 1)
             enemy_type = random.choice([EnemyB, EnemyJ, EnemyH])
-            self.enemies.append(enemy_type(random.randint(0, BOARD_WIDTH - 1), 0))
+            enemy = enemy_type(x, 0, self)
+            self.enemies.append(enemy)
+            self.enemy_threads.append(enemy)
+            enemy.start()
 
-        # Move fuel depots, missiles, and enemies
+        # Move fuel depots
         for depot in self.fuel_depots:
             depot.move()
-        for missile in self.missiles:
-            missile.move()
-        for enemy in self.enemies:
-            enemy.move()
 
         # Check collisions and update game state
         self.check_collisions()
@@ -50,32 +53,40 @@ class ServerGameLogic:
 
     def check_collisions(self):
         for enemy in self.enemies:
-            if enemy.x == self.player.x and enemy.y == self.player.y:
-                print(f"Collision detected with enemy at ({enemy.x}, {enemy.y}) and player at ({self.player.x}, {self.player.y})")
+            if self.is_colliding(self.player, enemy):
+                print(f"Collision detected with player at ({self.player.x}, {self.player.y}) and enemy at ({enemy.x}, {enemy.y})")
                 self.lives -= 1
                 self.enemies.remove(enemy)
+                enemy.running = False  # Stop the enemy thread
                 if self.lives == 0:
                     self.game_running = False
                 break
 
         for depot in self.fuel_depots:
-            if depot.x == self.player.x and depot.y == self.player.y:
-                print(f"Collision detected with fuel at ({depot.x}, {depot.y}) and enemy at ({self.player.x}, {self.player.y})")
+            if self.is_colliding(self.player, depot):
                 self.fuel = min(100, self.fuel + 50)
                 self.fuel_depots.remove(depot)
 
         for missile in self.missiles:
             for enemy in self.enemies:
-                if missile.x == enemy.x and missile.y == enemy.y:
+                if self.is_colliding(missile, enemy):
                     print(f"Collision detected with missile at ({missile.x}, {missile.y}) and enemy at ({enemy.x}, {enemy.y})")
                     self.score += 10
                     self.enemies.remove(enemy)
+                    enemy.running = False  # Stop the enemy thread
                     self.missiles.remove(missile)
                     break
 
-        self.enemies = [enemy for enemy in self.enemies if enemy.y < BOARD_HEIGHT]
+        self.enemies = [enemy for enemy in self.enemies if enemy.running]  # Filter out stopped enemies
         self.missiles = [missile for missile in self.missiles if missile.y >= 0]
         self.fuel_depots = [depot for depot in self.fuel_depots if depot.y < BOARD_HEIGHT]
+
+    def is_colliding(self, entity1, entity2):
+        # Define the collision detection logic
+        return (entity1.x < entity2.x + 1 and
+                entity1.x + 1 > entity2.x and
+                entity1.y < entity2.y + 1 and
+                entity1.y + 1 > entity2.y)
 
     def process_message(self, message):
         action = message.get("action")
@@ -84,7 +95,13 @@ class ServerGameLogic:
         elif action == "shoot":
             missile = self.player.shoot()
             self.missiles.append(missile)
-        
+        elif action == "reset_game":
+            self.reset_game()
+            # Stop existing enemy threads during reset
+            for enemy in self.enemy_threads:
+                enemy.running = False
+            self.enemy_threads = []
+
         # Update game state after processing the action
         self.update_game_state()
         return {"status": "ok", "game_state": self.get_game_state()}

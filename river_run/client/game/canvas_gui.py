@@ -17,16 +17,6 @@ class GameCanvas(tk.Canvas):
                 fill="blue"
             )
 
-            # Comment out obstacles
-            # for obs in self.game_logic.obstacles:
-            #     self.create_rectangle(
-            #         obs.x * 30,
-            #         obs.y * 30,
-            #         (obs.x + 1) * 30,
-            #         (obs.y + 1) * 30,
-            #         fill="red"
-            #     )
-
             for depot in self.game_logic.fuel_depots:
                 self.create_rectangle(
                     depot.x * 30,

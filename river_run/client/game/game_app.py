@@ -24,7 +24,7 @@ class GameApp(tk.Tk):
         self.bind("<Return>", lambda event: self.restart_game() if not self.game_logic.game_running else None)
         self.bind("<q>", lambda event: self.quit_game())
 
-        self.tick_rate = 20
+        self.tick_rate = 10
 
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
 

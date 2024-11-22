@@ -23,11 +23,11 @@ class ClientGameLogic:
         self.enemies = []
         for enemy in game_state['enemies']:
             if enemy['type'] == 'B':
-                self.enemies.append(EnemyB(enemy['x'], enemy['y']))
+                self.enemies.append(EnemyB(enemy['x'], enemy['y'], None))
             elif enemy['type'] == 'J':
-                self.enemies.append(EnemyJ(enemy['x'], enemy['y']))
+                self.enemies.append(EnemyJ(enemy['x'], enemy['y'], None))
             elif enemy['type'] == 'H':
-                self.enemies.append(EnemyH(enemy['x'], enemy['y']))
+                self.enemies.append(EnemyH(enemy['x'], enemy['y'], None))
 
         self.missiles = [Missile(missile['x'], missile['y'], missile['type']) for missile in game_state['missiles']]
         self.fuel_depots = [FuelDepot(depot['x'], depot['y']) for depot in game_state['fuel_depots']]
