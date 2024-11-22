@@ -24,7 +24,7 @@ class GameApp(tk.Tk):
         self.bind("<Return>", lambda event: self.restart_game() if not self.game_logic.game_running else None)
         self.bind("<q>", lambda event: self.quit_game())
 
-        self.tick_rate = 200
+        self.tick_rate = 20
 
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
 
@@ -68,6 +68,7 @@ class GameApp(tk.Tk):
         self.client.send_message({"action": "reset_game"})
         response = self.client.receive_message()
         if response.get('status') == 'ok' and 'game_state' in response:
+            print("Game Reset")
             self.game_logic.update_game_state(response['game_state'])
             self.info_label.config(text="Score: 0 | Lives: 3 | Fuel: 100")
             self.canvas.update_canvas()

@@ -26,8 +26,6 @@ class ServerGameLogic:
         if random.random() < 0.1:
             enemy_type = random.choice([EnemyB, EnemyJ, EnemyH])
             self.enemies.append(enemy_type(random.randint(0, BOARD_WIDTH - 1), 0))
-        # if random.random() < 0.2:
-        #     self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1, 1)))
 
         # Move fuel depots, missiles, and enemies
         for depot in self.fuel_depots:
@@ -36,10 +34,6 @@ class ServerGameLogic:
             missile.move()
         for enemy in self.enemies:
             enemy.move()
-        # for obs in self.obstacles:
-        #     if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH - 1):
-        #         obs.direction = -obs.direction
-        #     obs.move()
 
         # Check collisions and update game state
         self.check_collisions()
@@ -57,6 +51,7 @@ class ServerGameLogic:
     def check_collisions(self):
         for enemy in self.enemies:
             if enemy.x == self.player.x and enemy.y == self.player.y:
+                print(f"Collision detected with enemy at ({enemy.x}, {enemy.y}) and player at ({self.player.x}, {self.player.y})")
                 self.lives -= 1
                 self.enemies.remove(enemy)
                 if self.lives == 0:
@@ -65,29 +60,22 @@ class ServerGameLogic:
 
         for depot in self.fuel_depots:
             if depot.x == self.player.x and depot.y == self.player.y:
+                print(f"Collision detected with fuel at ({depot.x}, {depot.y}) and enemy at ({self.player.x}, {self.player.y})")
                 self.fuel = min(100, self.fuel + 50)
                 self.fuel_depots.remove(depot)
 
         for missile in self.missiles:
             for enemy in self.enemies:
                 if missile.x == enemy.x and missile.y == enemy.y:
+                    print(f"Collision detected with missile at ({missile.x}, {missile.y}) and enemy at ({enemy.x}, {enemy.y})")
                     self.score += 10
                     self.enemies.remove(enemy)
                     self.missiles.remove(missile)
                     break
 
-        # for obs in self.obstacles:
-        #     if obs.x == self.player.x and obs.y == self.player.y:
-        #         self.lives -= 1
-        #         self.obstacles.remove(obs)
-        #         if self.lives == 0:
-        #             self.game_running = False
-        #         break
-
         self.enemies = [enemy for enemy in self.enemies if enemy.y < BOARD_HEIGHT]
         self.missiles = [missile for missile in self.missiles if missile.y >= 0]
         self.fuel_depots = [depot for depot in self.fuel_depots if depot.y < BOARD_HEIGHT]
-        # self.obstacles = [obs for obs in self.obstacles if obs.y < BOARD_HEIGHT]
 
     def process_message(self, message):
         action = message.get("action")
@@ -107,7 +95,6 @@ class ServerGameLogic:
             "enemies": [{"x": enemy.x, "y": enemy.y, "type": enemy.type} for enemy in self.enemies],
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
             "missiles": [{"x": missile.x, "y": missile.y, "type": missile.missile_type} for missile in self.missiles],
-            # "obstacles": [{"x": obs.x, "y": obs.y, "direction": obs.direction} for obs in self.obstacles],
             "score": self.score,
             "lives": self.lives,
             "fuel": self.fuel,

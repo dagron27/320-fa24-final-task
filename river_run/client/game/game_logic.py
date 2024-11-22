@@ -8,7 +8,6 @@ class ClientGameLogic:
 
     def reset_game(self):
         self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
-        # self.obstacles = []  # Commenting out obstacles
         self.enemies = []
         self.missiles = []
         self.fuel_depots = []
@@ -16,11 +15,11 @@ class ClientGameLogic:
         self.lives = 3
         self.fuel = 100
         self.game_running = True
+        print("Game has been reset on client")
 
     def update_game_state(self, game_state):
         self.player.x = game_state['player']['x']
         self.player.y = game_state['player']['y']
-        # self.obstacles = [Obstacle(obs['x'], obs['y'], obs['direction']) for obs in game_state['obstacles']]  # Commenting out obstacles
         self.enemies = []
         for enemy in game_state['enemies']:
             if enemy['type'] == 'B':
