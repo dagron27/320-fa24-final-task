@@ -17,7 +17,7 @@ class ClientGameLogic:
         self.game_running = True
 
     def update_game_state(self, game_state):
-        print(game_state)
+        #print(game_state)
         self.player.x = game_state['player']['x']
         self.player.y = game_state['player']['y']
         self.obstacles = [Obstacle(obs['x'], obs['y'], obs['direction']) for obs in game_state['obstacles']]
