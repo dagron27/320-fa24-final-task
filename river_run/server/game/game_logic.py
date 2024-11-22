@@ -20,32 +20,26 @@ class ServerGameLogic:
         if not self.game_running:
             return
 
-        # Add new obstacles
+        # Add new obstacles and fuel depots
         if random.random() < 0.2:
-            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1,1)))
-
-        # Add new fuel depots
+            self.obstacles.append(Obstacle(random.randint(0, BOARD_WIDTH - 1), 0, random.randint(-1, 1)))
         if random.random() < 0.05:
             self.fuel_depots.append(FuelDepot(random.randint(0, BOARD_WIDTH - 1), 0))
 
-        # Move obstacles
+        # Move obstacles, fuel depots, missiles
         for obs in self.obstacles:
-            if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH -1 ):
+            if (obs.x + obs.direction) < 0 or (obs.x + obs.direction) > (BOARD_WIDTH - 1):
                 obs.direction = -obs.direction
             obs.move()
-
-        # Move fuel depots
         for depot in self.fuel_depots:
             depot.move()
-
-        # Move missiles
         for missile in self.missiles:
             missile.move()
 
-        # Check collisions
+        # Check collisions and update game state
         self.check_collisions()
 
-        # Decrease fuel
+        # Decrease fuel and check game over conditions
         self.fuel -= 1
         if self.fuel <= 0:
             self.lives -= 1
@@ -88,17 +82,19 @@ class ServerGameLogic:
         elif action == "shoot":
             missile = self.player.shoot()
             self.missiles.append(missile)
-        elif action == "reset":
-            self.reset_game()
-        # Update game state
+        
+        # Update game state after processing the action
         self.update_game_state()
-        # Return the updated game state
+        return {"status": "ok", "game_state": self.get_game_state()}
+
+    def get_game_state(self):
         return {
-            "player_position": {"x": self.player.x, "y": self.player.y},
-            "obstacles": [{"x": obs.x, "y": obs.y} for obs in self.obstacles],
+            "player": {"x": self.player.x, "y": self.player.y},
+            "obstacles": [{"x": obs.x, "y": obs.y, "direction": obs.direction} for obs in self.obstacles],
             "fuel_depots": [{"x": depot.x, "y": depot.y} for depot in self.fuel_depots],
-            "missiles": [{"x": missile.x, "y": missile.y} for missile in self.missiles],
+            "missiles": [{"x": missile.x, "y": missile.y, "type": missile.missile_type} for missile in self.missiles],
             "score": self.score,
             "lives": self.lives,
-            "fuel": self.fuel
+            "fuel": self.fuel,
+            "game_running": self.game_running,
         }

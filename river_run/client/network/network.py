@@ -17,26 +17,26 @@ class ClientNetwork:
         """Establish an SSH connection to the server."""
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh_client.connect(self.host, port=self.port, username=self.username, key_filename=self.key_filename)
-        print(f"Connected to {self.host}")
+        #print(f"Connected to {self.host}")
         self.channel = self.ssh_client.get_transport().open_session()
 
     def send_message(self, message):
         """Send a message to the server."""
         message_json = serialize_message(message)
         self.channel.send(message_json.encode('utf-8'))
-        print(f"Message sent: {message_json}")
+        #print(f"Message sent: {message_json}")
 
     def receive_message(self):
         """Receive a message from the server."""
         response = self.channel.recv(1024)
-        print(f"Raw response received: {response}")
+        #print(f"Raw response received: {response}")
         return deserialize_message(response.decode('utf-8'))
 
     def close(self):
         """Close the SSH connection."""
         self.channel.close()
         self.ssh_client.close()
-        print("SSH connection closed")
+        #print("SSH connection closed")
 
 #if __name__ == "__main__":
 #    client = ClientNetwork()

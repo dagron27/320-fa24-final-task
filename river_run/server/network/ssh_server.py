@@ -1,5 +1,6 @@
 import paramiko
 import threading
+import time
 from shared.network_utils import serialize_message, deserialize_message
 from game.game_logic import ServerGameLogic
 
@@ -7,6 +8,18 @@ class SSHServer(paramiko.ServerInterface):
     def __init__(self):
         self.event = threading.Event()
         self.game_logic = ServerGameLogic()
+        self.running = True  # Flag to control the game loop
+
+        # Start the game loop in a separate thread
+        self.game_loop_thread = threading.Thread(target=self.game_loop)
+        self.game_loop_thread.daemon = True  # Ensure the game loop thread stops when the main thread stops
+        self.game_loop_thread.start()
+
+    def game_loop(self):
+        while self.running:
+            self.game_logic.update_game_state()
+            print("Game state updated:", self.game_logic.get_game_state())  # Add detailed logging
+            time.sleep(0.2)  # Adjust the sleep time as necessary for your game
 
     def check_channel_request(self, kind, chanid):
         if kind == 'session':
@@ -27,7 +40,16 @@ class SSHServer(paramiko.ServerInterface):
                     break
                 message = deserialize_message(data.decode('utf-8'))
                 print(f"Received message: {message}")
-                response = self.game_logic.process_message(message)
+
+                if message["action"] == "get_game_state":
+                    game_state = self.game_logic.get_game_state()
+                    response = {"status": "ok", "game_state": game_state}
+                elif message["action"] == "stop_server":
+                    self.running = False  # Stop the game loop
+                    response = {"status": "ok"}
+                else:
+                    response = self.game_logic.process_message(message)
+
                 print(f"Sending response: {response}")
                 channel.send(serialize_message(response).encode('utf-8'))
         except Exception as e:

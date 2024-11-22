@@ -18,37 +18,56 @@ class GameApp(tk.Tk):
         self.bind("<Right>", lambda event: self.player_move("right"))
         self.bind("<space>", lambda event: self.player_shoot())
         self.bind("<Return>", lambda event: self.restart_game())
-        self.bind("<q>", lambda event: self.quit())
+        self.bind("<q>", lambda event: self.quit_game())  # Change to quit_game to handle cleanup
 
         self.client = client
         self.game_logic = ClientGameLogic(client)
         self.tick_rate = 200
 
+        # Bind the window close event to the quit_game function
+        self.protocol("WM_DELETE_WINDOW", self.quit_game)
+
         self.game_loop()
 
     def player_move(self, direction):
         if self.game_logic.game_running:
-            self.game_logic.player_move(direction)
+            # Immediate feedback
+            self.game_logic.player.move(direction)
             self.update_canvas()
+
+            # Send move command to server
+            self.client.send_message({"action": "move", "direction": direction})
+            response = self.client.receive_message()
+            if response.get('status') == 'ok':
+                self.game_logic.update_game_state(response['game_state'])
 
     def player_shoot(self):
         if self.game_logic.game_running:
-            self.game_logic.player_shoot()
+            # Immediate feedback
+            self.game_logic.missiles.append(self.game_logic.player.shoot())
+            self.update_canvas()
+
+            # Send shoot command to server
+            self.client.send_message({"action": "shoot"})
+            response = self.client.receive_message()
+            if response.get('status') == 'ok':
+                self.game_logic.update_game_state(response['game_state'])
 
     def game_loop(self):
         if not self.game_logic.game_running:
             self.display_game_over()
             return
 
-        # Fetch the latest game state from the server
+        # Regularly update the game state from the server
         self.client.send_message({"action": "get_game_state"})
         response = self.client.receive_message()
-        if response['status'] == 'ok':
+        print("Received game state response:", response)  # Add detailed logging
+        if response.get('status') == 'ok':
             self.game_logic.update_game_state(response['game_state'])
 
         self.update_canvas()
         self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
-        self.after(self.tick_rate, self.game_loop)
+        self.after(self.tick_rate, self.game_loop)  # Schedule the next game loop iteration
 
     def update_canvas(self):
         self.canvas.delete("all")
@@ -101,3 +120,7 @@ class GameApp(tk.Tk):
             self.game_logic.reset_game()
             self.info_label.config(text="Score: 0 | Lives: 3 | Fuel: 100")
             self.game_loop()
+
+    def quit_game(self):
+        self.client.send_message({"action": "stop_server"})  # Send stop signal to server
+        self.quit()  # Quit the GUI application
