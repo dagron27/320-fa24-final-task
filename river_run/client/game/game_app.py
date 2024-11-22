@@ -35,7 +35,6 @@ class GameApp(tk.Tk):
 
             self.client.send_message({"action": "move", "direction": direction})
             response = self.client.receive_message()
-            #print("Move response:", response)  # Add debugging
             if response.get('status') == 'ok':
                 self.game_logic.update_game_state(response['game_state'])
 
@@ -46,7 +45,6 @@ class GameApp(tk.Tk):
 
             self.client.send_message({"action": "shoot"})
             response = self.client.receive_message()
-            #print("Shoot response:", response)  # Add debugging
             if response.get('status') == 'ok':
                 self.game_logic.update_game_state(response['game_state'])
 
@@ -57,7 +55,6 @@ class GameApp(tk.Tk):
 
         self.client.send_message({"action": "get_game_state"})
         response = self.client.receive_message()
-        #print("Game state response:", response)  # Add debugging
         if response.get('status') == 'ok':
             self.game_logic.update_game_state(response['game_state'])
 
