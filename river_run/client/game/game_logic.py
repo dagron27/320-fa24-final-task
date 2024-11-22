@@ -20,14 +20,20 @@ class ClientGameLogic:
     def update_game_state(self, game_state):
         self.player.x = game_state['player']['x']
         self.player.y = game_state['player']['y']
-        self.enemies = []
+        
+        # Reset lists to ensure clean state
+        self.enemies.clear()
+        self.missiles.clear()
+        self.fuel_depots.clear()
+        
+        # Create enemy instances with a placeholder game_logic reference
         for enemy in game_state['enemies']:
             if enemy['type'] == 'B':
-                self.enemies.append(EnemyB(enemy['x'], enemy['y'], None))
+                self.enemies.append(EnemyB(enemy['x'], enemy['y'], self))
             elif enemy['type'] == 'J':
-                self.enemies.append(EnemyJ(enemy['x'], enemy['y'], None))
+                self.enemies.append(EnemyJ(enemy['x'], enemy['y'], self))
             elif enemy['type'] == 'H':
-                self.enemies.append(EnemyH(enemy['x'], enemy['y'], None))
+                self.enemies.append(EnemyH(enemy['x'], enemy['y'], self))
 
         self.missiles = [Missile(missile['x'], missile['y'], missile['type']) for missile in game_state['missiles']]
         self.fuel_depots = [FuelDepot(depot['x'], depot['y']) for depot in game_state['fuel_depots']]

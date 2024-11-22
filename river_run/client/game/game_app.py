@@ -1,8 +1,7 @@
-# game_app.py
-
 import tkinter as tk
 from game.game_logic import ClientGameLogic
 from game.canvas_gui import GameCanvas
+from game.game_state_updater import GameStateUpdater
 
 class GameApp(tk.Tk):
     def __init__(self, client):
@@ -26,8 +25,12 @@ class GameApp(tk.Tk):
 
         self.tick_rate = 10
 
-        self.protocol("WM_DELETE_WINDOW", self.quit_game)
+        # Start game state updater thread
+        self.state_updater = GameStateUpdater(self.game_logic, self.client)
+        self.state_updater.start()
 
+        self.protocol("WM_DELETE_WINDOW", self.quit_game)
+        self._game_loop_running = False
         self.game_loop()
 
     def player_move(self, direction):
@@ -51,17 +54,20 @@ class GameApp(tk.Tk):
                 self.game_logic.update_game_state(response['game_state'])
 
     def game_loop(self):
+        # Always process game states
+        while not self.state_updater.update_queue.empty():
+            game_state = self.state_updater.update_queue.get()
+            self.game_logic.update_game_state(game_state)
+        
+        # Always update info label, regardless of game state
+        self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
+
         if not self.game_logic.game_running:
             self.canvas.display_game_over()
-            return
+        else:
+            self.canvas.update_canvas()
 
-        self.client.send_message({"action": "get_game_state"})
-        response = self.client.receive_message()
-        if response.get('status') == 'ok':
-            self.game_logic.update_game_state(response['game_state'])
-
-        self.canvas.update_canvas()
-        self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
+        # Always schedule next iteration
         self.after(self.tick_rate, self.game_loop)
 
     def restart_game(self):
@@ -72,11 +78,12 @@ class GameApp(tk.Tk):
             self.game_logic.update_game_state(response['game_state'])
             self.info_label.config(text="Score: 0 | Lives: 3 | Fuel: 100")
             self.canvas.update_canvas()
-            self.game_loop()
         else:
             print("Failed to reset game: invalid response or missing game_state.")
 
     def quit_game(self):
+        # Stop the game state updater thread
+        self.state_updater.stop()
         self.client.send_message({"action": "quit_game"})
         self.client.close()  # Close the SSH connection
         self.quit()

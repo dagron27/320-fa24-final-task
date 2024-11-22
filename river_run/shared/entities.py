@@ -27,9 +27,8 @@ class Player:
     def switch_missile(self):
         self.missile_type = "guided" if self.missile_type == "straight" else "straight"
 
-class Enemy(threading.Thread):
-    lock = threading.Lock()  # Lock for synchronizing access to shared resources
 
+class Enemy(threading.Thread):
     def __init__(self, x, y, enemy_type, game_logic):
         super().__init__()
         self.x = x
@@ -37,12 +36,13 @@ class Enemy(threading.Thread):
         self.type = enemy_type
         self.game_logic = game_logic
         self.running = True
+        self.lock = threading.Lock()
 
     def run(self):
         while self.running:
-            with Enemy.lock:
+            with self.lock:
                 self.move()
-            time.sleep(1)  # Adjust sleep time to slow down enemy behavior
+            time.sleep(0.2)  # Adjust sleep time to slow down enemy behavior
 
     def move(self):
         raise NotImplementedError("This method should be overridden by subclasses")
