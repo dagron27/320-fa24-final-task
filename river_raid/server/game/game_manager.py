@@ -36,6 +36,9 @@ class GameManager:
             self.input_thread.start()  # Start input thread
             self.start_game_threads()
 
+    def stop(self):
+        print("Stopped...")
+
     def start_game_threads(self):
         """Start game threads and main game loop"""
         if not self.game_running:

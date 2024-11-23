@@ -1,5 +1,5 @@
 from network.network import ClientNetwork
-from game.game_app import GameApp
+from game.game_manager import GameApp
 
 if __name__ == "__main__":
     client = ClientNetwork()
