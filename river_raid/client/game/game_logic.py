@@ -3,11 +3,12 @@ from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, EnemyB, EnemyJ, EnemyH, FuelDepot, Missile
 
 class ClientGameLogic:
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, game_state):
+        self.game_state = game_state
         self.reset_game()
 
     def reset_game(self):
+        """Initialize or reset all game state"""
         self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
         self.enemies = []
         self.missiles = []
@@ -15,19 +16,27 @@ class ClientGameLogic:
         self.score = 0
         self.lives = 3
         self.fuel = 100
-        self.game_state = "running"  # Default state
+        self.game_state = "running"
         print("Game has been reset on client")
 
     def update_game_state(self, game_state):
+        """Update game state with server data"""
+        # Update player position
         self.player.x = game_state['player']['x']
         self.player.y = game_state['player']['y']
         
-        # Reset lists to ensure clean state
+        # Update basic game state
+        self.score = game_state['score']
+        self.lives = game_state['lives']
+        self.fuel = game_state['fuel']
+        self.game_state = game_state['game_state']
+
+        # Clear and update entities
         self.enemies.clear()
         self.missiles.clear()
         self.fuel_depots.clear()
-        
-        # Create enemy instances with a placeholder game_logic reference
+
+        # Recreate enemies
         for enemy in game_state['enemies']:
             if enemy['type'] == 'B':
                 self.enemies.append(EnemyB(enemy['x'], enemy['y'], self))
@@ -36,23 +45,68 @@ class ClientGameLogic:
             elif enemy['type'] == 'H':
                 self.enemies.append(EnemyH(enemy['x'], enemy['y'], self))
 
-        self.missiles = [Missile(missile['x'], missile['y'], missile['type']) for missile in game_state['missiles']]
-        self.fuel_depots = [FuelDepot(depot['x'], depot['y']) for depot in game_state['fuel_depots']]
-        self.score = game_state['score']
-        self.lives = game_state['lives']
-        self.fuel = game_state['fuel']
-        self.game_state = game_state['game_state']
+        # Recreate missiles
+        for missile in game_state['missiles']:
+            self.missiles.append(Missile(missile['x'], missile['y'], missile['type']))
 
-    def player_move(self, direction):
-        if self.game_state == "running":
-            move_message = {"action": "move", "direction": direction}
-            self.client.send_message(move_message)
-            response = self.client.receive_message()
-            self.update_game_state(response['game_state'])
+        # Recreate fuel depots
+        for depot in game_state['fuel_depots']:
+            self.fuel_depots.append(FuelDepot(depot['x'], depot['y']))
 
-    def player_shoot(self):
-        if self.game_state == "running":
-            shoot_message = {"action": "shoot"}
-            self.client.send_message(shoot_message)
-            response = self.client.receive_message()
-            self.update_game_state(response['game_state'])
+    def get_entity_at(self, x, y):
+        """Get entity at specific coordinates"""
+        # Check player
+        if self.player.x == x and self.player.y == y:
+            return self.player
+
+        # Check enemies
+        for enemy in self.enemies:
+            if enemy.x == x and enemy.y == y:
+                return enemy
+
+        # Check missiles
+        for missile in self.missiles:
+            if missile.x == x and missile.y == y:
+                return missile
+
+        # Check fuel depots
+        for depot in self.fuel_depots:
+            if depot.x == x and depot.y == y:
+                return depot
+
+        return None
+
+    def is_position_occupied(self, x, y):
+        """Check if position is occupied by any entity"""
+        return self.get_entity_at(x, y) is not None
+
+    def is_valid_position(self, x, y):
+        """Check if position is within game bounds"""
+        return 0 <= x < BOARD_WIDTH and 0 <= y < BOARD_HEIGHT
+
+    def get_game_state(self):
+        """Get current game state for rendering"""
+        return {
+            'player': {
+                'x': self.player.x,
+                'y': self.player.y
+            },
+            'enemies': [{
+                'x': enemy.x,
+                'y': enemy.y,
+                'type': enemy.__class__.__name__[5]  # Extract B, J, or H from class name
+            } for enemy in self.enemies],
+            'missiles': [{
+                'x': missile.x,
+                'y': missile.y,
+                'type': missile.type
+            } for missile in self.missiles],
+            'fuel_depots': [{
+                'x': depot.x,
+                'y': depot.y
+            } for depot in self.fuel_depots],
+            'score': self.score,
+            'lives': self.lives,
+            'fuel': self.fuel,
+            'game_state': self.game_state
+        }

@@ -2,7 +2,7 @@
 import tkinter as tk
 from game.game_logic import ClientGameLogic
 from game.canvas_gui import GameCanvas
-from game.game_state_updater import GameStateUpdater
+from game.game_state import GameState
 
 class GameApp(tk.Tk):
     def __init__(self, client):
@@ -10,82 +10,98 @@ class GameApp(tk.Tk):
         self.title("River Raid")
         self.geometry("1000x1000")
 
-        self.client = client
-        self.game_logic = ClientGameLogic(client)
+        # Initialize game state and logic
+        self.game_state = GameState(client)
+        self.game_logic = ClientGameLogic(self.game_state)
 
         # Create canvas and GUI elements
         self.canvas = GameCanvas(self, self.game_logic)
-        self.info_label = tk.Label(self, text="Score: 0 | Lives: 3 | Fuel: 100")
+        self.info_label = tk.Label(
+            self, 
+            text="Score: 0 | Lives: 3 | Fuel: 100",
+            font=("Helvetica", 25)
+        )
         self.info_label.pack()
 
+        # Bind keyboard controls
         self.bind("<Left>", lambda event: self.player_move("left"))
         self.bind("<Right>", lambda event: self.player_move("right"))
         self.bind("<space>", lambda event: self.player_shoot())
         self.bind("<Return>", lambda event: self.restart_game() if self.game_logic.game_state != "running" else None)
         self.bind("<q>", lambda event: self.quit_game())
 
-        self.tick_rate = 10
-
-        # Start game state updater thread
-        self.state_updater = GameStateUpdater(self.game_logic, self.client)
-        self.state_updater.start()
-
+        # Configure window close behavior
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
-        self._game_loop_running = False
+
+        # Set up game loop
+        self.tick_rate = 16  # ~60 FPS
         self.game_loop()
 
     def player_move(self, direction):
+        """Handle player movement input"""
         if self.game_logic.game_state == "running":
-            self.game_logic.player.move(direction)
-            self.canvas.update_canvas()
-
-            self.client.send_message({"action": "move", "direction": direction})
-            response = self.client.receive_message()
-            if response.get('status') == 'ok':
-                self.game_logic.update_game_state(response['game_state'])
-
+            # Only send the action to server, don't update locally
+            self.game_state.send_action({
+                "action": "move",
+                "direction": direction
+            })
+            
     def player_shoot(self):
+        """Handle player shoot input"""
         if self.game_logic.game_state == "running":
-            self.game_logic.missiles.append(self.game_logic.player.shoot())
-            self.canvas.update_canvas()
-
-            self.client.send_message({"action": "shoot"})
-            response = self.client.receive_message()
-            if response.get('status') == 'ok':
-                self.game_logic.update_game_state(response['game_state'])
+            # Only send the action to server, don't update locally
+            self.game_state.send_action({
+                "action": "shoot"
+            })
 
     def game_loop(self):
-        # Always process game states
-        while not self.state_updater.update_queue.empty():
-            game_state = self.state_updater.update_queue.get()
-            print(f"Player coordinates: ({game_state['player']['x']}, {game_state['player']['y']})")
-            self.game_logic.update_game_state(game_state)
-        
-        # Always update info label, regardless of game state
-        self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
+        """Main game loop"""
+        try:
+            # Process any pending state updates
+            updates = self.game_state.get_state_updates()
+            if updates:  # Only update if we have new states
+                latest_state = updates[-1]  # Use most recent state
+                self.game_logic.update_game_state(latest_state)
+                self.canvas.update_canvas()
 
-        if self.game_logic.game_state != "running":
-            self.canvas.display_game_over()
-        else:
-            self.canvas.update_canvas()
+            # Update game info display
+            self.info_label.config(
+                text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}",
+                font=("Helvetica", 25)
+            )
 
-        # Always schedule next iteration
-        self.after(self.tick_rate, self.game_loop)
+            # Check game state
+            if self.game_logic.game_state != "running":
+                self.canvas.display_game_over()
+
+        except Exception as e:
+            print(f"Error in game loop: {e}")
+
+        finally:
+            # Schedule next frame
+            self.after(self.tick_rate, self.game_loop)
 
     def restart_game(self):
-        self.client.send_message({"action": "reset_game"})
-        response = self.client.receive_message()
-        if response.get('status') == 'ok' and 'game_state' in response:
-            print("Game Reset")
-            self.game_logic.update_game_state(response['game_state'])
-            self.info_label.config(text="Score: 0 | Lives: 3 | Fuel: 100")
-            self.canvas.update_canvas()
-        else:
-            print("Failed to reset game: invalid response or missing game_state.")
+        """Handle game restart"""
+        self.game_state.send_action({
+            "action": "reset_game"
+        })
+        
+        # Local reset
+        self.game_logic.reset_game()
+        self.info_label.config(
+            text="Score: 0 | Lives: 3 | Fuel: 100",
+            font=("Helvetica", 25)
+        )
+        self.canvas.update_canvas()
 
     def quit_game(self):
-        # Stop the game state updater thread
-        self.state_updater.stop()
-        self.client.send_message({"action": "quit_game"})
-        self.client.close()  # Close the SSH connection
-        self.quit()
+        """Clean up and close the game"""
+        try:
+            print("Shutting down game...")
+            if hasattr(self, 'game_state'):
+                self.game_state.stop()
+            self.destroy()
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
+            self.destroy()

@@ -96,7 +96,7 @@ class GameManager:
 
     def game_loop(self):
         """Main game loop that coordinates game state and timing"""
-        TICK_RATE = 20  # Target FPS
+        TICK_RATE = 60  # Target FPS
         TICK_TIME = 1.0 / TICK_RATE
         
         while self.game_running:
