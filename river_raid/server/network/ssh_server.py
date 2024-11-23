@@ -1,6 +1,5 @@
 import paramiko
 import threading
-import time
 import sys
 from shared.network_utils import serialize_message, deserialize_message
 from game.game_manager import GameManager
@@ -12,15 +11,8 @@ class SSHServer(paramiko.ServerInterface):
         self.running = True
         self.buffer = ""
         
-        self.game_loop_thread = threading.Thread(target=self.game_loop)
-        self.game_loop_thread.daemon = True
-        self.game_loop_thread.start()
-
-    def game_loop(self):
-        while True:
-            if self.running:
-                self.game_manager.start()
-            time.sleep(0.2)
+        # Start the game manager
+        self.game_manager.start()
 
     def check_channel_request(self, kind, chanid):
         if kind == 'session':

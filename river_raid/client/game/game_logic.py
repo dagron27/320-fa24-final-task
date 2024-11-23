@@ -1,3 +1,4 @@
+# client/game/game_logic.py
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, EnemyB, EnemyJ, EnemyH, FuelDepot, Missile
 
@@ -14,7 +15,7 @@ class ClientGameLogic:
         self.score = 0
         self.lives = 3
         self.fuel = 100
-        self.game_running = True
+        self.game_state = "running"  # Default state
         print("Game has been reset on client")
 
     def update_game_state(self, game_state):
@@ -40,17 +41,17 @@ class ClientGameLogic:
         self.score = game_state['score']
         self.lives = game_state['lives']
         self.fuel = game_state['fuel']
-        self.game_running = game_state['game_running']
+        self.game_state = game_state['game_state']
 
     def player_move(self, direction):
-        if self.game_running:
+        if self.game_state == "running":
             move_message = {"action": "move", "direction": direction}
             self.client.send_message(move_message)
             response = self.client.receive_message()
             self.update_game_state(response['game_state'])
 
     def player_shoot(self):
-        if self.game_running:
+        if self.game_state == "running":
             shoot_message = {"action": "shoot"}
             self.client.send_message(shoot_message)
             response = self.client.receive_message()

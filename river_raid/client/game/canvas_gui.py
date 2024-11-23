@@ -11,7 +11,7 @@ class GameCanvas(tk.Canvas):
 
     def update_canvas(self):
         self.delete("all")
-        if self.game_logic.game_running:
+        if self.game_logic.game_state == "running":
             # Draw player
             self._draw_entity(self.game_logic.player)
 
@@ -41,7 +41,7 @@ class GameCanvas(tk.Canvas):
 
     def _draw_missile(self, missile):
         """Draw a missile as a vertical line"""
-        center_x = missile.x * self.scale + (missile.width/2)
+        center_x = missile.x * self.scale + (missile.width / 2)
         self.create_line(
             center_x,
             missile.y * self.scale,
@@ -55,8 +55,8 @@ class GameCanvas(tk.Canvas):
         """Display game over screen"""
         self.delete("all")
         self.create_text(
-            self.width/2,
-            self.height/2,
+            self.width / 2,
+            self.height / 2,
             text="Game Over",
             fill="red",
             font=("Helvetica", 100)

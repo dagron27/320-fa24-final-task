@@ -16,7 +16,7 @@ class GameLoops:
     def enemy_loop(self, running):
         while running():
             with self.game_state.state_lock:
-                if not self.game_state.game_running:
+                if not self.game_state.STATE_RUNNING:
                     time.sleep(self.ENEMY_UPDATE_INTERVAL)
                     continue
                 self.entity_manager.update_enemies()
@@ -25,7 +25,7 @@ class GameLoops:
     def collision_loop(self, running):
         while running():
             with self.game_state.state_lock:
-                if not self.game_state.game_running:
+                if not self.game_state.STATE_RUNNING:
                     time.sleep(self.COLLISION_CHECK_INTERVAL)
                     continue
                 self.collision_handler.check_all_collisions()
@@ -37,7 +37,7 @@ class GameLoops:
         
         while running():
             with self.game_state.state_lock:
-                if not self.game_state.game_running:
+                if not self.game_state.STATE_RUNNING:
                     time.sleep(self.STATE_UPDATE_INTERVAL)
                     continue
 

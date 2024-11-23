@@ -1,3 +1,4 @@
+# client/game/game_app.py
 import tkinter as tk
 from game.game_logic import ClientGameLogic
 from game.canvas_gui import GameCanvas
@@ -20,7 +21,7 @@ class GameApp(tk.Tk):
         self.bind("<Left>", lambda event: self.player_move("left"))
         self.bind("<Right>", lambda event: self.player_move("right"))
         self.bind("<space>", lambda event: self.player_shoot())
-        self.bind("<Return>", lambda event: self.restart_game() if not self.game_logic.game_running else None)
+        self.bind("<Return>", lambda event: self.restart_game() if self.game_logic.game_state != "running" else None)
         self.bind("<q>", lambda event: self.quit_game())
 
         self.tick_rate = 10
@@ -34,7 +35,7 @@ class GameApp(tk.Tk):
         self.game_loop()
 
     def player_move(self, direction):
-        if self.game_logic.game_running:
+        if self.game_logic.game_state == "running":
             self.game_logic.player.move(direction)
             self.canvas.update_canvas()
 
@@ -44,7 +45,7 @@ class GameApp(tk.Tk):
                 self.game_logic.update_game_state(response['game_state'])
 
     def player_shoot(self):
-        if self.game_logic.game_running:
+        if self.game_logic.game_state == "running":
             self.game_logic.missiles.append(self.game_logic.player.shoot())
             self.canvas.update_canvas()
 
@@ -62,7 +63,7 @@ class GameApp(tk.Tk):
         # Always update info label, regardless of game state
         self.info_label.config(text=f"Score: {self.game_logic.score} | Lives: {self.game_logic.lives} | Fuel: {self.game_logic.fuel}", font=("Helvetica", 25))
 
-        if not self.game_logic.game_running:
+        if self.game_logic.game_state != "running":
             self.canvas.display_game_over()
         else:
             self.canvas.update_canvas()

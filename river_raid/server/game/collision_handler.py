@@ -1,3 +1,5 @@
+from game.game_state import GameState
+
 class CollisionHandler:
     """Handles all collision detection and resolution"""
     def __init__(self, game_state):
@@ -15,7 +17,7 @@ class CollisionHandler:
                 self.game_state.lives -= 1
                 self.game_state.remove_enemy(enemy)
                 if self.game_state.lives <= 0:
-                    self.game_state.game_running = False
+                    self.game_state.game_state = GameState.STATE_GAME_OVER
                     break
 
     def _check_missile_enemy_collisions(self):

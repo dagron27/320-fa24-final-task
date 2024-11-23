@@ -1,9 +1,12 @@
-# server/game/shared_state.py
 import threading
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, FuelDepot, Missile, EnemyB, EnemyJ, EnemyH
 
 class GameState:
+    # Add these as class variables
+    STATE_RUNNING = "running"
+    STATE_GAME_OVER = "game_over"
+    
     def __init__(self):
         self.state_lock = threading.RLock()
         self.reset()
@@ -18,7 +21,7 @@ class GameState:
             self.score = 0
             self.lives = 3
             self.fuel = 100
-            self.game_running = True
+            self.game_state = self.STATE_RUNNING  # Set initial state to running
             
     def add_missile(self, missile):
         """Safely add a missile to the game state"""
@@ -65,7 +68,7 @@ class GameState:
             if self.fuel <= 0:
                 self.lives -= 1
                 if self.lives <= 0:
-                    self.game_running = False
+                    self.game_state = self.STATE_GAME_OVER
                 else:
                     self.fuel = 100
                     
@@ -94,5 +97,15 @@ class GameState:
                 "score": self.score,
                 "lives": self.lives,
                 "fuel": self.fuel,
-                "game_running": self.game_running
+                "game_state": self.game_state
             }
+
+    def is_running(self):
+        """Check if the game is currently running"""
+        with self.state_lock:
+            return self.game_state == self.STATE_RUNNING
+
+    def is_game_over(self):
+        """Check if the game is over"""
+        with self.state_lock:
+            return self.game_state == self.STATE_GAME_OVER
