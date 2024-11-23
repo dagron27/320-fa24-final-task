@@ -13,48 +13,19 @@ class Player:
         self.width = 30
         self.height = 30
         self.color = "blue"
-        
-        # Cooldown settings
-        self.move_cooldown = 0.1  # 100ms between moves
-        self.shoot_cooldown = 0.5  # 500ms between shots
-        self.last_move_time = 0
-        self.last_shoot_time = 0
-
-    def can_move(self):
-        """Check if enough time has passed to move again"""
-        current_time = time.time()
-        if current_time - self.last_move_time >= self.move_cooldown:
-            self.last_move_time = current_time
-            return True
-        return False
-
-    def can_shoot(self):
-        """Check if enough time has passed to shoot again"""
-        current_time = time.time()
-        if current_time - self.last_shoot_time >= self.shoot_cooldown:
-            self.last_shoot_time = current_time
-            return True
-        return False
 
     def move(self, direction):
-        """Try to move the player"""
-        if self.can_move():
-            if direction == "left":
-                self.x = max(0, self.x - 1)
-            elif direction == "right":
-                self.x = min(BOARD_WIDTH - 0.75, self.x + 1)
-            elif direction == "accelerate":
-                self.speed = min(3, self.speed + 1)
-            elif direction == "decelerate":
-                self.speed = max(1, self.speed - 1)
-            return True
-        return False
+        if direction == "left":
+            self.x = max(0, self.x - 1)
+        elif direction == "right":
+            self.x = min(BOARD_WIDTH - 0.75, self.x + 1)
+        elif direction == "accelerate":
+            self.speed = min(3, self.speed + 1)
+        elif direction == "decelerate":
+            self.speed = max(1, self.speed - 1)
 
     def shoot(self):
-        """Try to create a new missile"""
-        if self.can_shoot():
-            return Missile(self.x, self.y - 1, self.missile_type)
-        return None  # Explicitly return None if can't shoot
+        return Missile(self.x, self.y - 1, self.missile_type)
 
     def switch_missile(self):
         self.missile_type = "guided" if self.missile_type == "straight" else "straight"

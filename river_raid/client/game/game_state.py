@@ -11,7 +11,7 @@ class GameState:
         self.message_queue = queue.Queue(maxsize=10)  # Queue for player actions
         self.running = True
         self.last_update = time.time()  # Initialize last_update time
-        self.update_interval = 1.0/60  # 50ms between updates
+        self.update_interval = 0.05  # 50ms between updates
         
         # Start threads
         self._start_threads()

@@ -21,19 +21,13 @@ class CollisionHandler:
                     break
 
     def _check_missile_enemy_collisions(self):
-        """Check for collisions between missiles and enemies"""
-        with self.game_state.state_lock:
-            # Filter out None missiles first
-            valid_missiles = [m for m in self.game_state.missiles if m is not None]
-            
-            for missile in valid_missiles:
-                for enemy in self.game_state.enemies[:]:  # Copy list for safe removal
-                    if enemy is not None and self._is_colliding(missile, enemy):
-                        # Handle collision...
-                        self.game_state.score += enemy.points
-                        self.game_state.missiles.remove(missile)
-                        self.game_state.enemies.remove(enemy)
-                        break
+        for missile in self.game_state.missiles[:]:
+            for enemy in self.game_state.enemies[:]:
+                if self._is_colliding(missile, enemy):
+                    self.game_state.update_score(10)
+                    self.game_state.remove_enemy(enemy)
+                    self.game_state.remove_missile(missile)
+                    break
 
     def _check_player_fuel_collisions(self):
         for depot in self.game_state.fuel_depots[:]:
