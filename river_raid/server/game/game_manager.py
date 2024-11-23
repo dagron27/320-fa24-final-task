@@ -1,7 +1,7 @@
 import threading
 import queue
-from game_state import GameState
-from game_loops import GameLoops
+from game.game_state import GameState
+from game.game_loops import GameLoops
 
 class GameManager:
     def __init__(self):
@@ -9,10 +9,10 @@ class GameManager:
         self.shared_state = GameState()
         self.running = True
         self.input_queue = queue.Queue()
-        
+
         # Create and configure threads
         self._setup_threads()
-        
+
     def _setup_threads(self):
         """Initialize all game threads"""
         self.game_loops = GameLoops(self.shared_state)
@@ -20,7 +20,7 @@ class GameManager:
         self.collision_thread = threading.Thread(target=self.game_loops.collision_loop, args=(self._running,))
         self.state_thread = threading.Thread(target=self.game_loops.state_loop, args=(self._running,))
         self.input_thread = threading.Thread(target=self._input_loop)
-        
+
         # Make threads daemon so they exit when main program exits
         self.enemy_thread.daemon = True
         self.collision_thread.daemon = True

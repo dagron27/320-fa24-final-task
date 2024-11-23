@@ -1,6 +1,6 @@
 import time
-from entity_manager import EntityManager
-from collision_handler import CollisionHandler
+from game.entity_manager import EntityManager
+from game.collision_handler import CollisionHandler
 
 class GameLoops:
     """Handles all game loop logic"""
