@@ -58,6 +58,7 @@ class GameApp(tk.Tk):
         # Always process game states
         while not self.state_updater.update_queue.empty():
             game_state = self.state_updater.update_queue.get()
+            print(f"Player coordinates: ({game_state['player']['x']}, {game_state['player']['y']})")
             self.game_logic.update_game_state(game_state)
         
         # Always update info label, regardless of game state

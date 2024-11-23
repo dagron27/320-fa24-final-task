@@ -2,6 +2,7 @@
 import threading
 import queue
 import time
+from datetime import datetime
 
 class GameStateUpdater(threading.Thread):
     def __init__(self, game_logic, client):
@@ -17,7 +18,9 @@ class GameStateUpdater(threading.Thread):
             try:
                 self.client.send_message({"action": "get_game_state"})
                 #print("message sent")
+                print(f"Before received: {datetime.now()}")
                 response = self.client.receive_message()
+                print(f"Message received: {datetime.now()}")
                 #print(f"message received: {response['game_state']}")
                 if response.get('status') == 'ok':
                     self.update_queue.put(response['game_state'])
