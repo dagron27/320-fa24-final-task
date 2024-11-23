@@ -51,8 +51,12 @@ class GameManager:
         while self.running:
             try:
                 message = self.input_queue.get(timeout=0.1)
+                if(message == {'action': 'reset_game'}):
+                    print(message)
+                    print(3)
                 with self.shared_state.state_lock:
                     if message["action"] == "reset_game":
+                        print("try reset")
                         self.shared_state.reset()
                     elif self.shared_state.game_state == GameState.STATE_RUNNING:
                         if message["action"] == "move":
@@ -65,6 +69,11 @@ class GameManager:
 
     def process_message(self, message):
         """Process incoming messages from client"""
+        #if(message == {'action': 'reset_game'}):
+        #     print(message)
+        #     print(2)
+        #     #self.shared_state.reset()
+        # else:
         self.input_queue.put(message)
         return {"status": "ok", "game_state": self.shared_state.get_state()}
 
@@ -80,11 +89,11 @@ class GameManager:
         while self.running:
             start_time = time.time()
             
-            with self.shared_state.state_lock:
+            #with self.shared_state.state_lock:
                 # Check if the game is over
-                if self.shared_state.game_state == GameState.STATE_GAME_OVER:
-                    self.stop()
-                    break
+                # if self.shared_state.game_state == GameState.STATE_GAME_OVER:
+                #     self.stop()
+                #     break
 
             # Control tick rate
             end_time = time.time()
