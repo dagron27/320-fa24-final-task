@@ -8,7 +8,7 @@ class GameManager:
     def __init__(self):
         # Initialize shared state and control flags
         self.shared_state = GameState()
-        self.running = False
+        self.running = True
         self.game_running = False  # Separate flag for game state
         self.input_queue = queue.Queue()
 
@@ -35,6 +35,19 @@ class GameManager:
             self.running = True
             self.input_thread.start()  # Start input thread
             self.start_game_threads()
+
+    def stop(self):
+        # """Clean shutdown of game manager"""
+        # print("Stopping game manager...")
+        # self.running = False
+        # self.game_running = False
+        
+        # # Stop game threads
+        # self.stop_game_threads()
+        
+        # # Cleanup any resources
+        # self.shared_state.reset()
+        print("Stopped")
 
     def start_game_threads(self):
         """Start game threads and main game loop"""
@@ -112,7 +125,8 @@ class GameManager:
             end_time = time.time()
             elapsed_time = end_time - start_time
             sleep_time = max(0, TICK_TIME - elapsed_time)
-            time.sleep(sleep_time)
+            if(sleep_time):
+                time.sleep(sleep_time)
 
     def reset_game(self):
         """Reset the game state and restart threads"""

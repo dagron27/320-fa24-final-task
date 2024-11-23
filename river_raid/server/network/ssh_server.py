@@ -39,9 +39,6 @@ class SSHServer(paramiko.ServerInterface):
                     if message_str.strip():
                         try:
                             message = deserialize_message(message_str)
-                            if(message == {'action': 'reset_game'}):
-                                print(message)
-                                print(1)
                             response = self.game_manager.process_message(message)
                             channel.send((serialize_message(response) + '\n').encode('utf-8'))
                         except Exception as e:

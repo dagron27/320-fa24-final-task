@@ -1,5 +1,6 @@
 # client/game/game_app.py
 import tkinter as tk
+import time
 from game.game_logic import ClientGameLogic
 from game.canvas_gui import GameCanvas
 from game.game_state import GameState
@@ -34,13 +35,14 @@ class GameApp(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
 
         # Set up game loop
-        self.tick_rate = 16  # ~60 FPS
+        self.frame_rate = 60  # Target FPS
+        self.frame_time = int(1000 / self.frame_rate)  # milliseconds per frame
         self.game_loop()
 
     def player_move(self, direction):
         """Handle player movement input"""
-        if self.game_logic.game_state == "running":
-            # Only send the action to server, don't update locally
+        if (self.game_logic.game_state == "running" and 
+            self.game_logic.player.can_move()):
             self.game_state.send_action({
                 "action": "move",
                 "direction": direction
@@ -48,8 +50,9 @@ class GameApp(tk.Tk):
             
     def player_shoot(self):
         """Handle player shoot input"""
-        if self.game_logic.game_state == "running":
-            # Only send the action to server, don't update locally
+        if (self.game_logic.game_state == "running" and 
+            self.game_logic.player.can_shoot()):
+            # Only send shoot action if cooldown check passes
             self.game_state.send_action({
                 "action": "shoot"
             })
@@ -59,9 +62,14 @@ class GameApp(tk.Tk):
         try:
             # Process any pending state updates
             updates = self.game_state.get_state_updates()
-            if updates:  # Only update if we have new states
-                latest_state = updates[-1]  # Use most recent state
+            if updates:
+                latest_state = updates[-1]
                 self.game_logic.update_game_state(latest_state)
+
+            # Always update canvas and UI every frame
+            if self.game_logic.game_state != "running":
+                self.canvas.display_game_over()
+            else:
                 self.canvas.update_canvas()
 
             # Update game info display
@@ -70,16 +78,12 @@ class GameApp(tk.Tk):
                 font=("Helvetica", 25)
             )
 
-            # Check game state
-            if self.game_logic.game_state != "running":
-                self.canvas.display_game_over()
-
         except Exception as e:
             print(f"Error in game loop: {e}")
 
         finally:
-            # Schedule next frame
-            self.after(self.tick_rate, self.game_loop)
+            # Schedule next frame using constant frame time
+            self.after(self.frame_time, self.game_loop)
 
     def restart_game(self):
         """Handle game restart"""
@@ -93,7 +97,7 @@ class GameApp(tk.Tk):
             text="Score: 0 | Lives: 3 | Fuel: 100",
             font=("Helvetica", 25)
         )
-        self.canvas.update_canvas()
+        self.canvas.update_canvas()  # Force immediate canvas update
 
     def quit_game(self):
         """Clean up and close the game"""

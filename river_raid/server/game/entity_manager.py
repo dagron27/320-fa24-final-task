@@ -29,12 +29,21 @@ class EntityManager:
             if enemy.y >= BOARD_HEIGHT:
                 self.game_state.remove_enemy(enemy)
 
+    def add_missile(self, missile):
+        """Add missile to the game state if it's valid"""
+        if missile is not None:  # Only add valid missiles
+            self.game_state.missiles.append(missile)
+
     def update_missiles(self):
-        """Update and manage missiles"""
-        for missile in self.game_state.missiles[:]:
-            missile.move()
-            if missile.y < 0:
-                self.game_state.remove_missile(missile)
+        """Update all missiles and remove invalid ones"""
+        valid_missiles = []
+        for missile in self.game_state.missiles:
+            if missile is not None:
+                missile.move()
+                # Keep missiles that are still on screen
+                if 0 <= missile.y < BOARD_HEIGHT:
+                    valid_missiles.append(missile)
+        self.game_state.missiles = valid_missiles
 
     def update_fuel_depots(self):
         """Update and manage fuel depots"""
