@@ -1,4 +1,5 @@
 from game.game_state import GameState
+from shared.config import SCALE
 
 class CollisionHandler:
     """Handles all collision detection and resolution"""
@@ -36,10 +37,10 @@ class CollisionHandler:
                 self.game_state.remove_fuel_depot(depot)
 
     def _is_colliding(self, entity1, entity2):
-        width1 = getattr(entity1, 'width', 30) / 30
-        height1 = getattr(entity1, 'height', 30) / 30
-        width2 = getattr(entity2, 'width', 30) / 30
-        height2 = getattr(entity2, 'height', 30) / 30
+        width1 = getattr(entity1, 'width', SCALE) / SCALE
+        height1 = getattr(entity1, 'height', SCALE) / SCALE
+        width2 = getattr(entity2, 'width', SCALE) / SCALE
+        height2 = getattr(entity2, 'height', SCALE) / SCALE
         
         return (entity1.x < entity2.x + width2 and
                 entity1.x + width1 > entity2.x and

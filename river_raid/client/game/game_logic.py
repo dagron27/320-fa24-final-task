@@ -9,7 +9,7 @@ class ClientGameLogic:
 
     def reset_game(self):
         """Initialize or reset all game state"""
-        self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
+        self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1.5)
         self.enemies = []
         self.missiles = []
         self.fuel_depots = []

@@ -1,12 +1,13 @@
 import tkinter as tk
+from shared.config import CANVAS_WIDTH, CANVAS_HEIGHT, SCALE
 
 class GameCanvas(tk.Canvas):
     def __init__(self, parent, game_logic):
         super().__init__(parent, width=1000, height=950, bg="gray")
         self.game_logic = game_logic
-        self.scale = 30  # Define scaling factor
-        self.width = 1000
-        self.height = 950
+        self.scale = SCALE  # Define scaling factor
+        self.width = CANVAS_WIDTH
+        self.height = CANVAS_HEIGHT
         self.pack()
 
     def update_canvas(self):

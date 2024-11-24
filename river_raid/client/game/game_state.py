@@ -2,7 +2,6 @@
 import threading
 import queue
 import time
-from datetime import datetime
 
 class GameState:
     def __init__(self, client):

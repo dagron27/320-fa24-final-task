@@ -14,7 +14,7 @@ class GameState:
     def reset(self):
         """Initialize or reset all game state"""
         with self.state_lock:
-            self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1)
+            self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1.5)
             self.missiles = []
             self.fuel_depots = []
             self.enemies = []

@@ -3,17 +3,18 @@ import tkinter as tk
 from game.game_logic import ClientGameLogic
 from game.canvas_gui import GameCanvas
 from game.game_state import GameState
+from shared.config import WINDOW_HEIGHT, WINDOW_WIDTH
 
 class GameApp(tk.Tk):
     def __init__(self, client):
         super().__init__()
         self.title("River Raid")
-        self.geometry("1000x1000")
+        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
 
         # Initialize game state and logic
         self.game_state = GameState(client)
         self.game_logic = ClientGameLogic(self.game_state)
-
+        
         # Create canvas and GUI elements
         self.canvas = GameCanvas(self, self.game_logic)
         self.info_label = tk.Label(
