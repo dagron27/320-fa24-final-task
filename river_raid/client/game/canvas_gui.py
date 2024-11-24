@@ -18,7 +18,7 @@ class GameCanvas(tk.Canvas):
 
             # Draw fuel depots
             for depot in self.game_logic.fuel_depots:
-                self._draw_entity(depot)
+                self._draw_entity_circle(depot)
 
             # Draw missiles
             for missile in self.game_logic.missiles:
@@ -40,6 +40,19 @@ class GameCanvas(tk.Canvas):
             fill=entity.color
         )
 
+    def _draw_entity_circle(self, entity): 
+        """Draw a circular entity""" 
+        center_x = entity.x * self.scale + entity.width / 2 
+        center_y = entity.y * self.scale + entity.height / 2 
+        radius = entity.width / 2 
+        
+        self.create_oval( 
+            center_x - radius, 
+            center_y - radius, 
+            center_x + radius, 
+            center_y + radius, 
+            fill=entity.color )
+    
     def _draw_missile(self, missile):
         """Draw a missile as a vertical line"""
         center_x = missile.x * self.scale + (missile.width / 2)

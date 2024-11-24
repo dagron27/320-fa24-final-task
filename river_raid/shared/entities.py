@@ -59,26 +59,24 @@ class EnemyB(Enemy):
         self.width = SCALE * 3
         self.height = SCALE
         self.color = "purple"
-        self.vertical_direction = 1  # Start moving left or right randomly 
-        self.horizontal_direction = 1  # Start moving left or right randomly 
+        self.vertical_direction = 1
+        self.horizontal_direction = random.choice([-1, 0, 1])
         self.vertical_speed = 0.5
-        self.horizontal_speed = random.uniform(-1, 1)
+        self.horizontal_speed = random.uniform(0.3, 0.7)
 
-    def move(self): 
+    def move(self):
         self.y += self.vertical_direction * self.vertical_speed  # Boats move down the river
-    
-        # Horizontal movement logic 
-        self.x += self.horizontal_direction * self.horizontal_speed 
+        self.x += self.horizontal_direction * self.horizontal_speed
 
-        # Change direction at boundaries with a threshold 
-        if self.x < 0: 
-            self.horizontal_direction = 1 # Change direction to right 
-        elif self.x + self.width > BOARD_WIDTH: 
-            self.horizontal_direction = -1 # Change direction to left
+        # Change direction at boundaries with a threshold
+        if self.x < 0:  
+            self.horizontal_direction = 1  
+        elif self.x + 3 > BOARD_WIDTH:  
+            self.horizontal_direction = -1  
 
-        # Termination condition based on new limits 
-        if self.y > BOARD_HEIGHT + SCALE: 
-            print(f"B Stopped at x: {self.x} and y: {self.y}") 
+        # Termination condition based on new limits
+        if self.y > BOARD_HEIGHT + 3:
+            #print(f"B Stopped at x: {self.x} and y: {self.y}")
             self.running = False
 
 class EnemyJ(Enemy):
@@ -92,8 +90,8 @@ class EnemyJ(Enemy):
     def move(self):
         self.y += self.direction  # Jets move faster
         # Termination condition based on new limits 
-        if self.y > BOARD_HEIGHT + SCALE:
-            print(f"J Stopped at x: {self.x} and y: {self.y}") 
+        if self.y > BOARD_HEIGHT + 3:
+            #print(f"J Stopped at x: {self.x} and y: {self.y}") 
             self.running = False
 
 class EnemyH(Enemy):
@@ -102,35 +100,48 @@ class EnemyH(Enemy):
         self.width = SCALE * 2
         self.height = SCALE * 0.75
         self.color = "white"
-        self.vertical_direction = 1  # Start moving left or right randomly 
-        self.horizontal_direction = 1  # Start moving left or right randomly 
-        self.vertical_speed = random.uniform(0, 2)
-        self.horizontal_speed = random.uniform(-2, 2)
+        self.vertical_direction = random.choice([-1, 0, 1])
+        self.horizontal_direction = random.choice([-1, 0, 1])
+        self.vertical_speed = random.uniform(0.2, 0.8)
+        self.horizontal_speed = random.uniform(0.2, 0.8)
 
     def move(self):
-        self.y += self.vertical_direction * self.vertical_speed
-        self.x += self.horizontal_direction * self.horizontal_direction
         
-        if(random.randrange(0, 9) > 7):
-            self.y += self.vertical_direction * random.uniform(0, 2)
-            self.x += self.horizontal_direction * random.uniform(-2, 2)          
+        if random.randrange(0, 10) > 7:
+            self.vertical_direction = random.choice([-1, 0, 1])
+            self.horizontal_direction = random.choice([-1, 0, 1])
+            self.vertical_speed = random.uniform(0.2, 0.8)
+            self.horizontal_speed = random.uniform(0.2, 0.8)
+        
+        self.y += self.vertical_direction * self.vertical_speed
+        self.x += self.horizontal_direction * self.horizontal_speed
+        #print(f"{self.x}, {self.y}")
+
+        if self.x < 0:
+            self.horizontal_direction = 1  
+        elif self.x + 2 > BOARD_WIDTH:  
+            self.horizontal_direction = -1
+
+        # Change direction at boundaries with a threshold
+        if self.y < 0:
+            self.vertical_direction = 1   
 
         # Termination condition based on new limits 
-        if self.y > BOARD_HEIGHT + 50: 
-            print(f"H Stopped at x: {self.x} and y: {self.y}") 
+        if self.y > BOARD_HEIGHT + 3: 
+            #print(f"H Stopped at x: {self.x} and y: {self.y}") 
             self.running = False
 
 class FuelDepot:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.width = SCALE * 0.75
+        self.width = SCALE 
         self.height = SCALE * 0.75
         self.color = "green"
 
     def move(self):
         self.y += 1
-        if self.y < BOARD_HEIGHT + SCALE: 
+        if self.y < BOARD_HEIGHT + 3: 
             self.running = False
 
 class Missile:
@@ -145,5 +156,5 @@ class Missile:
     def move(self):
         self.y -= 1  # Straight missiles move up
         # Termination condition based on new limits (5 units above the top of the canvas) 
-        if self.y < -SCALE: 
+        if self.y < -3: 
             self.running = False
