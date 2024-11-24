@@ -26,15 +26,16 @@ class ClientGameLogic:
     def update_game_state(self, game_state):
         """Update game state with server data"""
         try:
+            #logging.info(f"Updating game state with: {game_state}")
             # Update player position
-            self.player.x = game_state['player']['x']
-            self.player.y = game_state['player']['y']
+            self.player.x = game_state['p']['x']
+            self.player.y = game_state['p']['y']
             
             # Update basic game state
-            self.score = game_state['score']
-            self.lives = game_state['lives']
-            self.fuel = game_state['fuel']
-            self.game_state = game_state['game_state']
+            self.score = game_state['s']
+            self.lives = game_state['l']
+            self.fuel = game_state['u']
+            self.game_state = game_state['g']
 
             # Clear and update entities
             self.enemies.clear()
@@ -42,21 +43,23 @@ class ClientGameLogic:
             self.fuel_depots.clear()
 
             # Recreate enemies
-            for enemy in game_state['enemies']:
-                if enemy['type'] == 'B':
+            for enemy in game_state['e']:
+                if enemy['t'] == 'B':
                     self.enemies.append(EnemyB(enemy['x'], enemy['y'], self))
-                elif enemy['type'] == 'J':
+                elif enemy['t'] == 'J':
                     self.enemies.append(EnemyJ(enemy['x'], enemy['y'], self))
-                elif enemy['type'] == 'H':
+                elif enemy['t'] == 'H':
                     self.enemies.append(EnemyH(enemy['x'], enemy['y'], self))
 
             # Recreate missiles
-            for missile in game_state['missiles']:
-                self.missiles.append(Missile(missile['x'], missile['y'], missile['type']))
+            for missile in game_state['m']:
+                self.missiles.append(Missile(missile['x'], missile['y'], missile['t']))
 
             # Recreate fuel depots
-            for depot in game_state['fuel_depots']:
+            for depot in game_state['f']:
                 self.fuel_depots.append(FuelDepot(depot['x'], depot['y']))
+        except KeyError as e:
+            logging.error(f"Key error in update_game_state: {e}")
         except Exception as e:
             logging.warning(f"Warning in update_game_state: {e}")
 

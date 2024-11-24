@@ -2,7 +2,6 @@
 import threading
 import queue
 import time
-import collections
 import logging
 
 # Configure logging
@@ -11,13 +10,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class GameState:
     def __init__(self, client):
         self.client = client
-        self.update_queue = queue.Queue(maxsize=5)  # Limit queue size
-        self.message_queue = queue.Queue(maxsize=5)  # Queue for player actions
-        self.leaky_bucket = collections.deque(maxlen=10)  # Leaky bucket with fixed size
-        self.bucket_interval = 0.3  # Time interval for processing bucket items in seconds
+        self.update_queue = queue.Queue(maxsize=3)  # Limit queue size
+        self.message_queue = queue.Queue(maxsize=20)  # Queue for player actions
         self.running = True
         self.last_update = time.time()  # Initialize last_update time
-        self.update_interval = 0.1  # 50ms between updates
+        self.update_interval = 0.05  # 50ms between updates
         
         # Start threads
         self._start_threads()
@@ -33,23 +30,6 @@ class GameState:
         self.update_thread = threading.Thread(target=self._state_updater)
         self.update_thread.daemon = True
         self.update_thread.start()
-
-        # Leaky bucket thread
-        self.bucket_thread = threading.Thread(target=self._leaky_bucket_handler)
-        self.bucket_thread.daemon = True
-        self.bucket_thread.start()
-
-    def _leaky_bucket_handler(self):
-        """Handle rate limiting using leaky bucket"""
-        while self.running:
-            if self.leaky_bucket:
-                action_data = self.leaky_bucket.popleft()  # Process oldest action
-                try:
-                    if not self.message_queue.full():
-                        self.message_queue.put_nowait(action_data)
-                except queue.Full:
-                    logging.warning("Message queue is full. Action is dropped.")
-            time.sleep(self.bucket_interval)
 
     def _message_handler(self):
         """Handle all outgoing messages and their responses"""
@@ -77,14 +57,24 @@ class GameState:
                 current_time = time.time()
                 if current_time - self.last_update >= self.update_interval:
                     self.client.send_message({"action": "get_game_state"})
+                    
                     response = self.client.receive_message()
                     
-                    if response.get('status') == 'ok':
+                    if response.get('status') == 'ok' and 'game_state' in response:
                         self._update_queue_put(response['game_state'])
                         self.last_update = current_time
-                        
+                    else:
+                        logging.warning(f"Unexpected response or missing 'game_state': {response}")
+                
+            except KeyError as e:
+                logging.error(f"State update error: Missing key {e}")
+                logging.error(f"Message causing KeyError: {response}")
+            except TypeError as e:
+                logging.error(f"State update error: Type error {e}")
+                logging.error(f"Message causing TypeError: {response}")
             except Exception as e:
-                logging.error(f"State update error: {e}")
+                logging.error(f"State update error: Unexpected error {e}")
+                logging.error(f"Message causing Unexpected error: {response}")
                 time.sleep(0.1)
                 
             time.sleep(0.01)
@@ -103,8 +93,17 @@ class GameState:
 
     def send_action(self, action_data):
         """Queue an action to be sent to the server with rate limiting"""
-        self.leaky_bucket.append(action_data)  # Add action to leaky bucket
-        logging.info(f"Action {action_data} queued in leaky bucket.")
+        retry_attempts = 3
+        for _ in range(retry_attempts):
+            try:
+                self.message_queue.put_nowait(action_data)
+                logging.info(f"Action {action_data} queued to be sent.")
+                return
+            except queue.Full:
+                logging.warning("Message queue is full. Retrying...")
+                time.sleep(0.05)
+        logging.warning("Message queue is full. Action is dropped after retries.")
+        time.sleep(0.1)  # Add a small delay to prevent immediate retries
 
     def get_state_updates(self):
         """Get all pending state updates"""

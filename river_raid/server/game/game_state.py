@@ -106,28 +106,28 @@ class GameState:
         with self.state_lock:
             try:
                 return {
-                    "player": {
+                    "p": {  # Player position
                         "x": self.player.x,
                         "y": self.player.y
                     },
-                    "enemies": [{
+                    "e": [{  # Enemies
                         "x": enemy.x,
                         "y": enemy.y,
-                        "type": enemy.type
+                        "t": enemy.type  # Use 't' for type
                     } for enemy in self.enemies],
-                    "fuel_depots": [{
+                    "f": [{  # Fuel depots
                         "x": depot.x,
                         "y": depot.y
                     } for depot in self.fuel_depots],
-                    "missiles": [{
+                    "m": [{  # Missiles
                         "x": missile.x,
                         "y": missile.y,
-                        "type": missile.missile_type
+                        "t": missile.missile_type
                     } for missile in self.missiles],
-                    "score": self.score,
-                    "lives": self.lives,
-                    "fuel": self.fuel,
-                    "game_state": self.game_state
+                    "s": self.score,  # Score
+                    "l": self.lives,  # Lives
+                    "u": self.fuel,  # Fuel
+                    "g": self.game_state  # Game state
                 }
             except Exception as e:
                 logging.warning(f"Warning in get_state: {e}")

@@ -27,7 +27,7 @@ class ClientNetwork:
 
     def send_message(self, message):
         message_json = serialize_message(message) + '\n'
-        logging.info(f"Sending message: {message_json.strip()}")  # Remove '\n' from log
+        #logging.info(f"Sending message: {message_json.strip()}")  # Remove '\n' from log
         self.channel.send(message_json.encode('utf-8'))
 
     def receive_message(self):
@@ -35,29 +35,26 @@ class ClientNetwork:
             try:
                 part = self.channel.recv(1024).decode('utf-8')
                 self.buffer += part
+                
                 while '\n' in self.buffer:
                     message, self.buffer = self.buffer.split('\n', 1)
                     if message.strip():
                         try:
                             deserialized_message = json.loads(message)
-                            if deserialized_message.get('status') == 'ok' and 'game_state' in deserialized_message:
-                                game_state = deserialized_message['game_state']
-                                # player_pos = game_state['player']
-                                # enemies_count = len(game_state['enemies'])
-                                # fuel_count = len(game_state['fuel_depots'])
-                                # missiles_count = len(game_state['missiles'])
-                                # score = game_state['score']
-                                # lives = game_state['lives']
-                                # fuel = game_state['fuel']
-                                # game_status = game_state['game_state']
-                                
-                                # logging.info(f"Player Position: {player_pos}, "
-                                #             f"Enemies Count: {enemies_count}, "
-                                #             f"Fuel Depots Count: {fuel_count}, "
-                                #             f"Missiles Count: {missiles_count}, "
-                                #             f"Score: {score}, Lives: {lives}, "
-                                #             f"Fuel: {fuel}, Game State: {game_status}")
-                            return deserialized_message
+                            if deserialized_message.get('status') == 'ok':
+                                if 'game_state' in deserialized_message:
+                                    # Handle direct game_state
+                                    game_state = deserialized_message['game_state']
+                                    return deserialized_message
+                                elif 'responses' in deserialized_message and len(deserialized_message['responses']) > 0:
+                                    # Handle nested game_state
+                                    nested_response = deserialized_message['responses'][0]
+                                    if 'game_state' in nested_response:
+                                        return nested_response
+                                else:
+                                    logging.warning(f"Received 'ok' status but no 'game_state' key found. Full message: {deserialized_message}")
+                            else:
+                                logging.warning(f"Unexpected status in message: {deserialized_message.get('status')}. Full message: {deserialized_message}")
                         except json.JSONDecodeError as e:
                             logging.warning(f"Failed to decode message: {message[:25]}, Error: {e}")
                             continue
@@ -69,6 +66,8 @@ class ClientNetwork:
             except Exception as e:
                 logging.error(f"Error receiving message: {e}")
                 time.sleep(0.1)
+        return None
+
 
     def close(self):
         logging.info("Closing SSH connection.")

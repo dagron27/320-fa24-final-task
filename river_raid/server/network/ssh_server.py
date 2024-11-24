@@ -41,37 +41,48 @@ class SSHServer(paramiko.ServerInterface):
         logging.info(f"Public key authentication request: username={username}")
         return paramiko.AUTH_SUCCESSFUL
 
-    def handle_client(self, channel):
+    def handle_client(self, channel):  # Ensure this method is correctly defined within the class
         try:
-            logging.info("Handling new client.")
+            #logging.info("Handling new client.")
             while True:
                 data = channel.recv(1024).decode('utf-8')
                 if not data:
                     logging.info("No more data from client. Closing connection.")
                     break
-                
+
                 self.buffer += data
-                
+
                 while '\n' in self.buffer:
                     message_str, self.buffer = self.buffer.split('\n', 1)
                     if message_str.strip():
                         try:
-                            logging.info(f"Received message: {message_str[:25]}")
+                            # Deserialize the message from the client
                             message = deserialize_message(message_str)
+                            if message is None:
+                                logging.error("Failed to deserialize message")
+                                continue
+
+                            # Process the message and prepare a response
                             if "actions" in message:
                                 responses = []
                                 for action in message["actions"]:
                                     response = self.game_manager.process_message(action)
                                     responses.append(response)
-                                response_str = serialize_message({"status": "ok", "responses": responses}) + '\n'
+                                response_dict = {"status": "ok", "responses": responses}
+                                response_str = serialize_message(response_dict) + '\n'
                             else:
                                 response = self.game_manager.process_message(message)
+                                response_dict = response
                                 response_str = serialize_message(response) + '\n'
-                            logging.info(f"Sending response: {response_str.strip()[:25]}")
+
+                            # Log the response before sending
+                            if not response_dict.get('status') == 'ok' or 'game_state' not in response_dict:
+                                logging.error(f"Response missing proper 'game_state' or 'ok' information: {response_dict}")
+
+                            # Send the response back to the client
                             channel.send(response_str.encode('utf-8'))
                         except Exception as e:
                             logging.error(f"Error processing message: {e}")
-                            
         except Exception as e:
             logging.error(f"Error handling client: {e}")
         finally:
