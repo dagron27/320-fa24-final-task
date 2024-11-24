@@ -8,10 +8,13 @@ class GameLoops:
         self.game_state = game_state
         self.entity_manager = EntityManager(game_state)
         self.collision_handler = CollisionHandler(game_state)
-        
-        self.ENEMY_UPDATE_INTERVAL = 0.2
-        self.COLLISION_CHECK_INTERVAL = 0.1
-        self.STATE_UPDATE_INTERVAL = 0.2
+
+        self.FUEL_RATE = 3
+        self.SCORE_RATE = 5
+
+        self.ENEMY_UPDATE_INTERVAL = 0.15
+        self.COLLISION_CHECK_INTERVAL = 0.05
+        self.STATE_UPDATE_INTERVAL = 0.15
 
     def enemy_loop(self, running):
         while running():
@@ -45,8 +48,8 @@ class GameLoops:
                 self.entity_manager.update_fuel_depots()
 
                 # Update counters
-                fuel_counter = (fuel_counter + 1) % 5
-                score_counter = (score_counter + 1) % 10
+                fuel_counter = (fuel_counter + 1) % self.FUEL_RATE
+                score_counter = (score_counter + 1) % self.SCORE_RATE
 
                 if fuel_counter == 0:
                     self.game_state.update_fuel(-1)

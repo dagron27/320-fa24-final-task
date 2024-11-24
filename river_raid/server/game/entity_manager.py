@@ -1,5 +1,5 @@
 import random
-from shared.config import BOARD_WIDTH, BOARD_HEIGHT, CANVAS_HEIGHT, CANVAS_WIDTH, SCALE
+from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import FuelDepot, EnemyB, EnemyJ, EnemyH
 
 class EntityManager:
@@ -16,22 +16,19 @@ class EntityManager:
         if random.random() < self.SPAWN_RATES['enemy']:
             x = random.randint(0, int(BOARD_WIDTH) - 1)
             enemy_type = random.choice([EnemyB, EnemyJ, EnemyH])
-            print(enemy_type)
             self.game_state.add_enemy(enemy_type(x, 0, self.game_state))  # Ensure game_state is passed
 
         for enemy in self.game_state.enemies[:]:
-            enemy.move()  # Call the move method for each enemy
+            enemy.move()
 
-            # Remove enemy if it goes out of bounds or stops running
             if not enemy.running:
-                print("Enemy removed")
                 self.game_state.remove_enemy(enemy)
 
     def update_missiles(self):
         """Update and manage missiles"""
         for missile in self.game_state.missiles[:]:
             missile.move()
-            if missile.y < -SCALE:
+            if missile.y < -1:
                 self.game_state.remove_missile(missile)
 
     def update_fuel_depots(self):
@@ -42,5 +39,5 @@ class EntityManager:
             )
         for depot in self.game_state.fuel_depots[:]:
             depot.move()
-            if depot.y >= CANVAS_HEIGHT + SCALE:
+            if depot.y >= BOARD_HEIGHT + 3:
                 self.game_state.remove_fuel_depot(depot)
