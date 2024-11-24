@@ -1,3 +1,4 @@
+import os 
 import threading
 import queue
 import time
@@ -37,7 +38,24 @@ class GameManager:
             self.start_game_threads()
 
     def stop(self):
+        """Stop the game and close the program"""
+        self.running = False  # Signal all threads to stop
+        self.game_running = False  # Ensure the game threads stop running
+        
+        # Ensure all threads are joined to avoid any hanging threads
+        if self.input_thread.is_alive():
+            self.input_thread.join()
+        if self.enemy_thread.is_alive():
+            self.enemy_thread.join()
+        if self.collision_thread.is_alive():
+            self.collision_thread.join()
+        if self.state_thread.is_alive():
+            self.state_thread.join()
+        if hasattr(self, 'game_loop_thread') and self.game_loop_thread.is_alive():
+            self.game_loop_thread.join()
+        
         print("Stopped...")
+        os._exit(0)  # Exit the program
 
     def start_game_threads(self):
         """Start game threads and main game loop"""
