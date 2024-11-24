@@ -8,10 +8,9 @@ class CollisionHandler:
 
     def check_all_collisions(self):
         """Check and handle all possible collisions"""
-        with self.game_state.state_lock:
-            self._check_player_enemy_collisions()
-            self._check_missile_enemy_collisions()
-            self._check_player_fuel_collisions()
+        self._check_player_enemy_collisions()
+        self._check_missile_enemy_collisions()
+        self._check_player_fuel_collisions()
 
     def _check_player_enemy_collisions(self):
         for enemy in self.game_state.enemies[:]:
