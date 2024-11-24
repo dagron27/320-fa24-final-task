@@ -27,6 +27,7 @@ class GameCanvas(tk.Canvas):
             # Draw enemies
             for enemy in self.game_logic.enemies:
                 self._draw_entity(enemy)
+
         else:
             self.display_game_over()
 

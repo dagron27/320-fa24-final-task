@@ -14,7 +14,7 @@ class GameApp(tk.Tk):
         # Initialize game state and logic
         self.game_state = GameState(client)
         self.game_logic = ClientGameLogic(self.game_state)
-        
+
         # Create canvas and GUI elements
         self.canvas = GameCanvas(self, self.game_logic)
         self.info_label = tk.Label(
@@ -35,7 +35,7 @@ class GameApp(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
 
         # Set up game loop
-        self.tick_rate = 16  # ~60 FPS
+        self.tick_rate = 16
         self.game_loop()
 
     def player_move(self, direction):
@@ -71,10 +71,6 @@ class GameApp(tk.Tk):
                 font=("Helvetica", 25)
             )
 
-            # Check game state
-            if self.game_logic.game_state != "running":
-                self.canvas.display_game_over()
-
         except Exception as e:
             print(f"Error in game loop: {e}")
 
@@ -82,19 +78,19 @@ class GameApp(tk.Tk):
             # Schedule next frame
             self.after(self.tick_rate, self.game_loop)
 
-    def restart_game(self):
-        """Handle game restart"""
-        self.game_state.send_action({
-            "action": "reset_game"
-        })
+    def restart_game(self): 
+        """Handle game restart""" 
+        self.canvas.display_game_over() 
+        # Ensure "Game Over" screen is shown briefly 
+        self.after(250, self._restart_game) # Delay reset by 500 milliseconds 
         
-        # Local reset
-        self.game_logic.reset_game()
-        self.info_label.config(
-            text="Score: 0 | Lives: 3 | Fuel: 100",
-            font=("Helvetica", 25)
-        )
-        self.canvas.update_canvas()
+    def _restart_game(self): 
+        self.game_state.send_action({ "action": "reset_game" }) 
+        # Local reset 
+        self.game_logic.reset_game() 
+        self.info_label.config( 
+            text="Score: 0 | Lives: 3 | Fuel: 100", 
+            font=("Helvetica", 25) ) 
 
     def quit_game(self):
         """Clean up and close the game"""
