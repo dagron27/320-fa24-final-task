@@ -1,3 +1,4 @@
+import logging
 import time
 from game.entity_manager import EntityManager
 from game.collision_handler import CollisionHandler
@@ -18,20 +19,26 @@ class GameLoops:
 
     def enemy_loop(self, running):
         while running():
-            with self.game_state.state_lock:
-                if not self.game_state.STATE_RUNNING:
-                    time.sleep(self.ENEMY_UPDATE_INTERVAL)
-                    continue
-                self.entity_manager.update_enemies()
+            try:
+                with self.game_state.state_lock:
+                    if not self.game_state.STATE_RUNNING:
+                        time.sleep(self.ENEMY_UPDATE_INTERVAL)
+                        continue
+                    self.entity_manager.update_enemies()
+            except Exception as e:
+                logging.warning(f"Warning in enemy_loop: {e}")
             time.sleep(self.ENEMY_UPDATE_INTERVAL)
 
     def collision_loop(self, running):
         while running():
-            with self.game_state.state_lock:
-                if not self.game_state.STATE_RUNNING:
-                    time.sleep(self.COLLISION_CHECK_INTERVAL)
-                    continue
-                self.collision_handler.check_all_collisions()
+            try:
+                with self.game_state.state_lock:
+                    if not self.game_state.STATE_RUNNING:
+                        time.sleep(self.COLLISION_CHECK_INTERVAL)
+                        continue
+                    self.collision_handler.check_all_collisions()
+            except Exception as e:
+                logging.warning(f"Warning in collision_loop: {e}")
             time.sleep(self.COLLISION_CHECK_INTERVAL)
 
     def state_loop(self, running):
@@ -39,21 +46,23 @@ class GameLoops:
         score_counter = 0
         
         while running():
-            with self.game_state.state_lock:
-                if not self.game_state.STATE_RUNNING:
-                    time.sleep(self.STATE_UPDATE_INTERVAL)
-                    continue
+            try:
+                with self.game_state.state_lock:
+                    if not self.game_state.STATE_RUNNING:
+                        time.sleep(self.STATE_UPDATE_INTERVAL)
+                        continue
 
-                self.entity_manager.update_missiles()
-                self.entity_manager.update_fuel_depots()
+                    self.entity_manager.update_missiles()
+                    self.entity_manager.update_fuel_depots()
 
-                # Update counters
-                fuel_counter = (fuel_counter + 1) % self.FUEL_RATE
-                score_counter = (score_counter + 1) % self.SCORE_RATE
+                    # Update counters
+                    fuel_counter = (fuel_counter + 1) % self.FUEL_RATE
+                    score_counter = (score_counter + 1) % self.SCORE_RATE
 
-                if fuel_counter == 0:
-                    self.game_state.update_fuel(-1)
-                if score_counter == 0:
-                    self.game_state.update_score(1)
-
+                    if fuel_counter == 0:
+                        self.game_state.update_fuel(-1)
+                    if score_counter == 0:
+                        self.game_state.update_score(1)
+            except Exception as e:
+                logging.warning(f"Warning in state_loop: {e}")
             time.sleep(self.STATE_UPDATE_INTERVAL)

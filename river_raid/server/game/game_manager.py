@@ -2,6 +2,7 @@ import os
 import threading
 import queue
 import time
+import logging
 from game.game_state import GameState
 from game.game_loops import GameLoops
 
@@ -98,14 +99,20 @@ class GameManager:
                             self.shared_state.add_missile(missile)
             except queue.Empty:
                 continue
+            except Exception as e:
+                logging.warning(f"Warning in _input_loop: {e}")
 
     def process_message(self, message):
         """Process incoming messages from client"""
-        if message == {'action': 'reset_game'}:
-            self.reset_game()
-        else:
-            self.input_queue.put(message)
-        return {"status": "ok", "game_state": self.shared_state.get_state()}
+        try:
+            if message == {'action': 'reset_game'}:
+                self.reset_game()
+            else:
+                self.input_queue.put(message)
+            return {"status": "ok", "game_state": self.shared_state.get_state()}
+        except Exception as e:
+            logging.warning(f"Warning in process_message: {e}")
+            return {"status": "error", "message": str(e)}
 
     def _running(self):
         """Getter to determine if the game is still running"""
