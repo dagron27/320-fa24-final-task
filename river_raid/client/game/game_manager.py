@@ -1,5 +1,6 @@
-# client/game/game_app.py
+# client/game/game_manager.py
 import tkinter as tk
+import logging
 from game.game_logic import ClientGameLogic
 from game.canvas_gui import GameCanvas
 from game.game_state import GameState
@@ -41,19 +42,25 @@ class GameApp(tk.Tk):
     def player_move(self, direction):
         """Handle player movement input"""
         if self.game_logic.game_state == "running":
-            # Only send the action to server, don't update locally
-            self.game_state.send_action({
-                "action": "move",
-                "direction": direction
-            })
+            try:
+                # Only send the action to server, don't update locally
+                self.game_state.send_action({
+                    "action": "move",
+                    "direction": direction
+                })
+            except Exception as e:
+                logging.warning(f"Warning in player_move: {e}")
             
     def player_shoot(self):
         """Handle player shoot input"""
         if self.game_logic.game_state == "running":
-            # Only send the action to server, don't update locally
-            self.game_state.send_action({
-                "action": "shoot"
-            })
+            try:
+                # Only send the action to server, don't update locally
+                self.game_state.send_action({
+                    "action": "shoot"
+                })
+            except Exception as e:
+                logging.warning(f"Warning in player_shoot: {e}")
 
     def game_loop(self):
         """Main game loop"""
@@ -72,7 +79,7 @@ class GameApp(tk.Tk):
             )
 
         except Exception as e:
-            print(f"Error in game loop: {e}")
+            logging.warning(f"Warning in game_loop: {e}")
 
         finally:
             # Schedule next frame
@@ -80,25 +87,32 @@ class GameApp(tk.Tk):
 
     def restart_game(self): 
         """Handle game restart""" 
-        self.canvas.display_game_over() 
-        # Ensure "Game Over" screen is shown briefly 
-        self.after(250, self._restart_game) # Delay reset by 500 milliseconds 
+        try:
+            self.canvas.display_game_over() 
+            # Ensure "Game Over" screen is shown briefly 
+            self.after(250, self._restart_game) # Delay reset by 500 milliseconds 
+        except Exception as e:
+            logging.warning(f"Warning in restart_game: {e}")
         
     def _restart_game(self): 
-        self.game_state.send_action({ "action": "reset_game" }) 
-        # Local reset 
-        self.game_logic.reset_game() 
-        self.info_label.config( 
-            text="Score: 0 | Lives: 3 | Fuel: 100", 
-            font=("Helvetica", 25) ) 
+        try:
+            self.game_state.send_action({ "action": "reset_game" }) 
+            # Local reset 
+            self.game_logic.reset_game() 
+            self.info_label.config( 
+                text="Score: 0 | Lives: 3 | Fuel: 100", 
+                font=("Helvetica", 25) 
+            )
+        except Exception as e:
+            logging.warning(f"Warning in _restart_game: {e}")
 
     def quit_game(self):
         """Clean up and close the game"""
         try:
-            print("Shutting down game...")
+            logging.info("Shutting down game...")
             if hasattr(self, 'game_state'):
                 self.game_state.stop()
             self.destroy()
         except Exception as e:
-            print(f"Error during shutdown: {e}")
+            logging.warning(f"Warning during shutdown: {e}")
             self.destroy()

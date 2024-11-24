@@ -1,6 +1,8 @@
+# shared/entities.py
 import threading
 import time
 import random
+import logging
 from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT, CANVAS_HEIGHT, CANVAS_WIDTH
 
 class Player:
@@ -16,20 +18,29 @@ class Player:
         self.color = "blue"
 
     def move(self, direction):
-        if direction == "left":
-            self.x = max(0, self.x - 1)
-        elif direction == "right":
-            self.x = min(BOARD_WIDTH - 1, self.x + 1)
-        elif direction == "accelerate":
-            self.speed = min(3, self.speed + 1)
-        elif direction == "decelerate":
-            self.speed = max(1, self.speed - 1)
+        try:
+            if direction == "left":
+                self.x = max(0, self.x - 1)
+            elif direction == "right":
+                self.x = min(BOARD_WIDTH - 1, self.x + 1)
+            elif direction == "accelerate":
+                self.speed = min(3, self.speed + 1)
+            elif direction == "decelerate":
+                self.speed = max(1, self.speed - 1)
+        except Exception as e:
+            logging.warning(f"Warning in Player.move: {e}")
 
     def shoot(self):
-        return Missile(self.x + 0.5, self.y - 1, self.missile_type)
+        try:
+            return Missile(self.x + 0.5, self.y - 1, self.missile_type)
+        except Exception as e:
+            logging.warning(f"Warning in Player.shoot: {e}")
 
     def switch_missile(self):
-        self.missile_type = "guided" if self.missile_type == "straight" else "straight"
+        try:
+            self.missile_type = "guided" if self.missile_type == "straight" else "straight"
+        except Exception as e:
+            logging.warning(f"Warning in Player.switch_missile: {e}")
 
 class Enemy(threading.Thread):
     def __init__(self, x, y, enemy_type, game_logic):
@@ -47,7 +58,10 @@ class Enemy(threading.Thread):
     def run(self):
         while self.running:
             with self.lock:
-                self.move()
+                try:
+                    self.move()
+                except Exception as e:
+                    logging.warning(f"Warning in Enemy.run: {e}")
             time.sleep(0.2)
 
     def move(self):
@@ -65,19 +79,21 @@ class EnemyB(Enemy):
         self.horizontal_speed = random.uniform(0.3, 0.7)
 
     def move(self):
-        self.y += self.vertical_direction * self.vertical_speed  # Boats move down the river
-        self.x += self.horizontal_direction * self.horizontal_speed
+        try:
+            self.y += self.vertical_direction * self.vertical_speed  # Boats move down the river
+            self.x += self.horizontal_direction * self.horizontal_speed
 
-        # Change direction at boundaries with a threshold
-        if self.x < 0:  
-            self.horizontal_direction = 1  
-        elif self.x + 3 > BOARD_WIDTH:  
-            self.horizontal_direction = -1  
+            # Change direction at boundaries with a threshold
+            if self.x < 0:  
+                self.horizontal_direction = 1  
+            elif self.x + 3 > BOARD_WIDTH:  
+                self.horizontal_direction = -1  
 
-        # Termination condition based on new limits
-        if self.y > BOARD_HEIGHT + 3:
-            #print(f"B Stopped at x: {self.x} and y: {self.y}")
-            self.running = False
+            # Termination condition based on new limits
+            if self.y > BOARD_HEIGHT + 3:
+                self.running = False
+        except Exception as e:
+            logging.warning(f"Warning in EnemyB.move: {e}")
 
 class EnemyJ(Enemy):
     def __init__(self, x, y, game_logic):
@@ -88,11 +104,13 @@ class EnemyJ(Enemy):
         self.direction = random.uniform(1, 2)
 
     def move(self):
-        self.y += self.direction  # Jets move faster
-        # Termination condition based on new limits 
-        if self.y > BOARD_HEIGHT + 3:
-            #print(f"J Stopped at x: {self.x} and y: {self.y}") 
-            self.running = False
+        try:
+            self.y += self.direction  # Jets move faster
+            # Termination condition based on new limits 
+            if self.y > BOARD_HEIGHT + 3:
+                self.running = False
+        except Exception as e:
+            logging.warning(f"Warning in EnemyJ.move: {e}")
 
 class EnemyH(Enemy):
     def __init__(self, x, y, game_logic):
@@ -106,30 +124,30 @@ class EnemyH(Enemy):
         self.horizontal_speed = random.uniform(0.2, 0.8)
 
     def move(self):
-        
-        if random.randrange(0, 10) > 7:
-            self.vertical_direction = random.choice([-1, 0, 1])
-            self.horizontal_direction = random.choice([-1, 0, 1])
-            self.vertical_speed = random.uniform(0.2, 0.8)
-            self.horizontal_speed = random.uniform(0.2, 0.8)
-        
-        self.y += self.vertical_direction * self.vertical_speed
-        self.x += self.horizontal_direction * self.horizontal_speed
-        #print(f"{self.x}, {self.y}")
+        try:
+            if random.randrange(0, 10) > 7:
+                self.vertical_direction = random.choice([-1, 0, 1])
+                self.horizontal_direction = random.choice([-1, 0, 1])
+                self.vertical_speed = random.uniform(0.2, 0.8)
+                self.horizontal_speed = random.uniform(0.2, 0.8)
+            
+            self.y += self.vertical_direction * self.vertical_speed
+            self.x += self.horizontal_direction * self.horizontal_speed
 
-        if self.x < 0:
-            self.horizontal_direction = 1  
-        elif self.x + 2 > BOARD_WIDTH:  
-            self.horizontal_direction = -1
+            if self.x < 0:
+                self.horizontal_direction = 1  
+            elif self.x + 2 > BOARD_WIDTH:  
+                self.horizontal_direction = -1
 
-        # Change direction at boundaries with a threshold
-        if self.y < 0:
-            self.vertical_direction = 1   
+            # Change direction at boundaries with a threshold
+            if self.y < 0:
+                self.vertical_direction = 1   
 
-        # Termination condition based on new limits 
-        if self.y > BOARD_HEIGHT + 3: 
-            #print(f"H Stopped at x: {self.x} and y: {self.y}") 
-            self.running = False
+            # Termination condition based on new limits 
+            if self.y > BOARD_HEIGHT + 3: 
+                self.running = False
+        except Exception as e:
+            logging.warning(f"Warning in EnemyH.move: {e}")
 
 class FuelDepot:
     def __init__(self, x, y):
@@ -140,9 +158,12 @@ class FuelDepot:
         self.color = "green"
 
     def move(self):
-        self.y += 1
-        if self.y < BOARD_HEIGHT + 3: 
-            self.running = False
+        try:
+            self.y += 1
+            if self.y < BOARD_HEIGHT + 3: 
+                self.running = False
+        except Exception as e:
+            logging.warning(f"Warning in FuelDepot.move: {e}")
 
 class Missile:
     def __init__(self, x, y, missile_type):
@@ -154,7 +175,10 @@ class Missile:
         self.color = "yellow"
 
     def move(self):
-        self.y -= 1  # Straight missiles move up
-        # Termination condition based on new limits (5 units above the top of the canvas) 
-        if self.y < -3: 
-            self.running = False
+        try:
+            self.y -= 1  # Straight missiles move up
+            # Termination condition based on new limits (5 units above the top of the canvas) 
+            if self.y < -3: 
+                self.running = False
+        except Exception as e:
+            logging.warning(f"Warning in Missile.move: {e}")

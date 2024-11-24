@@ -1,3 +1,4 @@
+# server/game/entity_manager.py
 import logging
 import random
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT

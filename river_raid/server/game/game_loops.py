@@ -1,3 +1,4 @@
+# server/game/game_loops.py
 import logging
 import time
 from game.entity_manager import EntityManager

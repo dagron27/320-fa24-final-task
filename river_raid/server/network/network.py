@@ -1,3 +1,4 @@
+# server/network/network.py
 import paramiko
 import os
 import socket

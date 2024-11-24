@@ -1,3 +1,4 @@
+# server/game/collision_handler.py
 import logging
 from game.game_state import GameState
 from shared.config import SCALE

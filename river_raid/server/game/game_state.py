@@ -1,3 +1,4 @@
+# server/game/game_state.py
 import threading
 import logging
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT

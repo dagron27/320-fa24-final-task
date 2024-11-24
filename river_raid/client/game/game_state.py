@@ -1,3 +1,4 @@
+# client/game/game_state.py
 import threading
 import queue
 import time
