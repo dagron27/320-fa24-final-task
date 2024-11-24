@@ -86,7 +86,7 @@ class GameManager:
         """Main input processing loop"""
         while self.running:
             try:
-                message = self.input_queue.get(timeout=0.1)
+                message = self.input_queue.get(timeout=0.05)
                 with self.shared_state.state_lock:
                     if message["action"] == "reset_game":
                         self.reset_game()
@@ -138,7 +138,6 @@ class GameManager:
     def reset_game(self):
         """Reset the game state and restart threads"""
         self.stop_game_threads()
-        with self.shared_state.state_lock:
-            self.shared_state.reset()
+        self.shared_state.reset()
         self._setup_threads()  # Reinitialize game threads
         self.start_game_threads()  # Restart game threads

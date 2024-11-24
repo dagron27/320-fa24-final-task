@@ -26,8 +26,6 @@ class Player:
             self.speed = max(1, self.speed - 1)
 
     def shoot(self):
-        current_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
-        print(f"Shot at {current_time}!")
         return Missile(self.x + 0.5, self.y - 1, self.missile_type)
 
     def switch_missile(self):
