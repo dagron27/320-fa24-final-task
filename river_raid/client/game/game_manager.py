@@ -39,9 +39,9 @@ class GameApp(tk.Tk):
         # Key state tracking and cooldowns
         self.keys_pressed = set()
         self.last_move_time = 0
-        self.move_cooldown = 0.15  # 200ms cooldown for movement
+        self.move_cooldown = 0.225  # 200ms cooldown for movement
         self.last_shoot_time = 0
-        self.shoot_cooldown = 0.4  # 500ms cooldown for shooting
+        self.shoot_cooldown = 0.175  # 500ms cooldown for shooting
 
         # Configure window close behavior
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
