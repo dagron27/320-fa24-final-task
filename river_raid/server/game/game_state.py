@@ -2,37 +2,37 @@
 import threading
 import logging
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
-from shared.entities import Player, FuelDepot, Missile, EnemyB, EnemyJ, EnemyH
+from shared.entities import Player, FuelDepot, Missile
+from shared.entity_pool import EntityPool
 
 class GameState:
-    # Add these as class variables
+    """Manages the game's state and entities"""
     STATE_RUNNING = "running"
     STATE_GAME_OVER = "game_over"
     
     def __init__(self):
         self.state_lock = threading.RLock()
+        self.entity_pool = EntityPool()
         self.reset()
         
     def reset(self):
-        """Initialize or reset all game state"""
+        """Reset the game state to initial values"""
         with self.state_lock:
-            try:
-                self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1.5)
-                self.missiles = []
-                self.fuel_depots = []
-                self.enemies = []
-                self.score = 0
-                self.lives = 3
-                self.fuel = 100
-                self.game_state = self.STATE_RUNNING  # Set initial state to running
-            except Exception as e:
-                logging.warning(f"Warning in reset: {e}")
+            self.player = Player(BOARD_WIDTH // 2, BOARD_HEIGHT - 1.5)
+            self.missiles = []
+            self.fuel_depots = []
+            self.enemies = []
+            self.score = 0
+            self.lives = 3
+            self.fuel = 100
+            self.game_state = self.STATE_RUNNING
                 
     def add_missile(self, missile):
         """Safely add a missile to the game state"""
         with self.state_lock:
             try:
                 self.missiles.append(missile)
+                logging.debug(f"Missile added at position ({missile.x}, {missile.y})")
             except Exception as e:
                 logging.warning(f"Warning in add_missile: {e}")
             
@@ -41,6 +41,7 @@ class GameState:
         with self.state_lock:
             try:
                 self.enemies.append(enemy)
+                logging.debug(f"Enemy type {enemy.type} added at position ({enemy.x}, {enemy.y})")
             except Exception as e:
                 logging.warning(f"Warning in add_enemy: {e}")
             
@@ -49,46 +50,54 @@ class GameState:
         with self.state_lock:
             try:
                 self.fuel_depots.append(depot)
+                logging.debug(f"Fuel depot added at position ({depot.x}, {depot.y})")
             except Exception as e:
                 logging.warning(f"Warning in add_fuel_depot: {e}")
             
     def remove_missile(self, missile):
-        """Safely remove a missile from the game state"""
+        """Safely remove a missile and return it to the pool"""
         with self.state_lock:
             try:
                 if missile in self.missiles:
                     self.missiles.remove(missile)
+                    self.entity_pool.release(missile)
+                    logging.debug("Missile removed and returned to pool")
             except Exception as e:
                 logging.warning(f"Warning in remove_missile: {e}")
                 
     def remove_enemy(self, enemy):
-        """Safely remove an enemy from the game state"""
+        """Safely remove an enemy and return it to the pool"""
         with self.state_lock:
             try:
                 if enemy in self.enemies:
                     self.enemies.remove(enemy)
+                    self.entity_pool.release(enemy)
+                    logging.debug(f"Enemy type {enemy.type} removed and returned to pool")
             except Exception as e:
                 logging.warning(f"Warning in remove_enemy: {e}")
                 
     def remove_fuel_depot(self, depot):
-        """Safely remove a fuel depot from the game state"""
+        """Safely remove a fuel depot and return it to the pool"""
         with self.state_lock:
             try:
                 if depot in self.fuel_depots:
                     self.fuel_depots.remove(depot)
+                    self.entity_pool.release(depot)
+                    logging.debug("Fuel depot removed and returned to pool")
             except Exception as e:
                 logging.warning(f"Warning in remove_fuel_depot: {e}")
                 
     def update_score(self, points):
-        """Safely update the score"""
+        """Safely update the game score"""
         with self.state_lock:
             try:
                 self.score += points
+                logging.debug(f"Score updated: {self.score}")
             except Exception as e:
                 logging.warning(f"Warning in update_score: {e}")
             
     def update_fuel(self, amount):
-        """Safely update fuel and handle fuel depletion"""
+        """Safely update fuel amount and check game over condition"""
         with self.state_lock:
             try:
                 self.fuel = max(0, min(100, self.fuel + amount))
@@ -96,24 +105,26 @@ class GameState:
                     self.lives -= 1
                     if self.lives <= 0:
                         self.game_state = self.STATE_GAME_OVER
+                        logging.info("Game Over - Out of lives")
                     else:
                         self.fuel = 100
+                        logging.info(f"Lost life, {self.lives} remaining")
             except Exception as e:
                 logging.warning(f"Warning in update_fuel: {e}")
                     
     def get_state(self):
-        """Get the current game state in a network-friendly format"""
+        """Get the current game state for network transmission"""
         with self.state_lock:
             try:
                 return {
-                    "p": {  # Player position
+                    "p": {  # Player
                         "x": self.player.x,
                         "y": self.player.y
                     },
                     "e": [{  # Enemies
                         "x": enemy.x,
                         "y": enemy.y,
-                        "t": enemy.type  # Use 't' for type
+                        "t": enemy.type
                     } for enemy in self.enemies],
                     "f": [{  # Fuel depots
                         "x": depot.x,
@@ -124,26 +135,21 @@ class GameState:
                         "y": missile.y,
                         "t": missile.missile_type
                     } for missile in self.missiles],
-                    "s": self.score,  # Score
-                    "l": self.lives,  # Lives
-                    "u": self.fuel,  # Fuel
-                    "g": self.game_state  # Game state
+                    "s": self.score,
+                    "l": self.lives,
+                    "u": self.fuel,
+                    "g": self.game_state
                 }
             except Exception as e:
-                logging.warning(f"Warning in get_state: {e}")
+                logging.error(f"Error in get_state: {e}")
+                return {}
 
     def is_running(self):
-        """Check if the game is currently running"""
+        """Check if game is running"""
         with self.state_lock:
-            try:
-                return self.game_state == self.STATE_RUNNING
-            except Exception as e:
-                logging.warning(f"Warning in is_running: {e}")
+            return self.game_state == self.STATE_RUNNING
 
     def is_game_over(self):
-        """Check if the game is over"""
+        """Check if game is over"""
         with self.state_lock:
-            try:
-                return self.game_state == self.STATE_GAME_OVER
-            except Exception as e:
-                logging.warning(f"Warning in is_game_over: {e}")
+            return self.game_state == self.STATE_GAME_OVER

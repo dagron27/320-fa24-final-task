@@ -4,20 +4,36 @@ import random
 import time
 import threading
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
-from shared.entities import FuelDepot, EnemyB, EnemyJ, EnemyH
+from shared.entity_pool import EntityPool
 
 class EntityManager:
+    """Manages all game entities and their movement threads"""
     def __init__(self, game_state):
         self.game_state = game_state
+        self.entity_pool = EntityPool()
+        
+        # Spawn rates and weights
         self.SPAWN_RATES = {
-            'enemy': 0.4,  # 40% chance per check
-            'fuel': 0.05  # Make sure this rate is defined
+            'enemies': {
+                'B': 0.7,  # 20% chance for boats
+                'J': 0.5,  # 10% chance for jets
+                'H': 0.3   # 10% chance for helicopters
+            },
+            'fuel': 0.2    # 20% chance for fuel
         }
+
+        self.ENEMY_WEIGHTS = {
+            'B': 50,  # Boat: 50% when spawning enemy
+            'J': 30,  # Jet: 30% when spawning enemy
+            'H': 20   # Helicopter: 20% when spawning enemy
+        }
+
+        # Timing intervals
         self.spawn_interval = 1.0  # Check for spawning every second
         self.movement_interval = 0.2  # Move enemies every 0.2 seconds
         self.running = True
         
-        # Create threads for each enemy type and spawning
+        # Create threads for each game system
         self.movement_threads = {
             'H': threading.Thread(target=self._h_movement_loop),
             'J': threading.Thread(target=self._j_movement_loop),
@@ -26,30 +42,46 @@ class EntityManager:
             'missiles': threading.Thread(target=self._missile_loop),
             'fuel': threading.Thread(target=self._fuel_loop)
         }
-        
+
     def start_movement_threads(self):
         """Start all movement threads"""
-        for thread in self.movement_threads.values():
+        for name, thread in self.movement_threads.items():
             thread.daemon = True
             thread.start()
+            logging.info(f"Started {name} thread")
             
     def stop_movement_threads(self):
         """Stop all movement threads"""
         self.running = False
-        for thread in self.movement_threads.values():
+        for name, thread in self.movement_threads.items():
             if thread.is_alive():
+                logging.info(f"Stopping {name} thread...")
                 thread.join(timeout=1.0)
+
+    def _get_weighted_enemy_type(self):
+        """Get enemy type based on weights"""
+        total = sum(self.ENEMY_WEIGHTS.values())
+        r = random.uniform(0, total)
+        cumulative = 0
+        
+        for enemy_type, weight in self.ENEMY_WEIGHTS.items():
+            cumulative += weight
+            if r <= cumulative:
+                return enemy_type
+        return 'B'  # Default to boat if something goes wrong
 
     def _spawner_loop(self):
         """Dedicated thread for enemy spawning"""
         while self.running:
             try:
-                if random.random() < self.SPAWN_RATES['enemy']:
-                    with self.game_state.state_lock:
-                        x = random.randint(0, int(BOARD_WIDTH) - 1)
-                        enemy_type = random.choice([EnemyB, EnemyJ, EnemyH])
-                        self.game_state.add_enemy(enemy_type(x, 0, self.game_state))
-                        logging.info(f"Spawned new {enemy_type.__name__}")
+                # Check spawning for each enemy type
+                for enemy_type, rate in self.SPAWN_RATES['enemies'].items():
+                    if random.random() < rate:
+                        with self.game_state.state_lock:
+                            x = random.randint(0, int(BOARD_WIDTH) - 1)
+                            enemy = self.entity_pool.acquire(enemy_type, x, 0, self.game_state)
+                            self.game_state.add_enemy(enemy)
+                            logging.info(f"Spawned new {enemy_type} enemy")
             except Exception as e:
                 logging.warning(f"Warning in spawner loop: {e}")
             time.sleep(self.spawn_interval)
@@ -59,7 +91,8 @@ class EntityManager:
         while self.running:
             try:
                 with self.game_state.state_lock:
-                    for enemy in [e for e in self.game_state.enemies if isinstance(e, EnemyH)]:
+                    h_enemies = [e for e in self.game_state.enemies if e.type == 'H']
+                    for enemy in h_enemies:
                         enemy.move()
                         if not enemy.running:
                             self.game_state.remove_enemy(enemy)
@@ -72,7 +105,8 @@ class EntityManager:
         while self.running:
             try:
                 with self.game_state.state_lock:
-                    for enemy in [e for e in self.game_state.enemies if isinstance(e, EnemyJ)]:
+                    j_enemies = [e for e in self.game_state.enemies if e.type == 'J']
+                    for enemy in j_enemies:
                         enemy.move()
                         if not enemy.running:
                             self.game_state.remove_enemy(enemy)
@@ -85,7 +119,8 @@ class EntityManager:
         while self.running:
             try:
                 with self.game_state.state_lock:
-                    for enemy in [e for e in self.game_state.enemies if isinstance(e, EnemyB)]:
+                    b_enemies = [e for e in self.game_state.enemies if e.type == 'B']
+                    for enemy in b_enemies:
                         enemy.move()
                         if not enemy.running:
                             self.game_state.remove_enemy(enemy)
@@ -114,7 +149,8 @@ class EntityManager:
                     # Spawn new fuel depots
                     if random.random() < self.SPAWN_RATES['fuel']:
                         x = random.randint(0, int(BOARD_WIDTH) - 1)
-                        self.game_state.add_fuel_depot(FuelDepot(x, 0))
+                        depot = self.entity_pool.acquire('fuel', x, 0)
+                        self.game_state.add_fuel_depot(depot)
                         logging.info("Spawned new fuel depot")
 
                     # Move existing fuel depots
@@ -125,3 +161,11 @@ class EntityManager:
             except Exception as e:
                 logging.warning(f"Warning in fuel loop: {e}")
             time.sleep(1.0)  # Check fuel spawning every second
+
+    def adjust_spawn_rates(self, difficulty_factor=1.0):
+        """Adjust spawn rates based on difficulty"""
+        self.SPAWN_RATES['enemies'] = {
+            'B': 0.2 * difficulty_factor,
+            'J': 0.1 * difficulty_factor,
+            'H': 0.1 * difficulty_factor
+        }
