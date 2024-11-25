@@ -4,6 +4,9 @@ import queue
 import logging
 from shared.entities import EnemyB, EnemyJ, EnemyH, FuelDepot, Missile
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [entity_pool] - %(message)s')
+
 class EntityPool:
     """Thread-safe object pool for game entities"""
     def __init__(self, max_size=100):
@@ -48,12 +51,12 @@ class EntityPool:
                 entity.running = True
                 if hasattr(entity, 'game_logic'):
                     entity.game_logic = game_logic
-                logging.debug(f"Reused {entity_type} from pool")
+                logging.debug(f"[entity_pool] Reused {entity_type} from pool")
                 return entity
             except queue.Empty:
                 # Create new if pool is empty
                 entity = self._create_entity(entity_type, x, y, game_logic)
-                logging.debug(f"Created new {entity_type}")
+                logging.debug(f"[entity_pool] Created new {entity_type}")
                 return entity
 
     def release(self, entity):
@@ -74,7 +77,7 @@ class EntityPool:
             with self.locks[entity_type]:
                 try:
                     self.pools[entity_type].put_nowait(entity)
-                    logging.debug(f"Released {entity_type} to pool")
+                    logging.debug(f"[entity_pool] Released {entity_type} to pool")
                 except queue.Full:
-                    logging.debug(f"Pool full for {entity_type}, discarding entity")
+                    logging.debug(f"[entity_pool] Pool full for {entity_type}, discarding entity")
                     pass  # If pool is full, let the entity be garbage collected

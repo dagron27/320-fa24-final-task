@@ -5,6 +5,9 @@ import random
 import logging
 from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT, CANVAS_HEIGHT, CANVAS_WIDTH
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - [entities] - %(message)s')
+
 class Player:
     def __init__(self, x, y):
         self.x = x
@@ -28,19 +31,19 @@ class Player:
             elif direction == "decelerate":
                 self.speed = max(1, self.speed - 1)
         except Exception as e:
-            logging.warning(f"Warning in Player.move: {e}")
+            logging.warning(f"[entities] Warning in Player.move: {e}")
 
     def shoot(self):
         try:
             return Missile(self.x + 0.5, self.y - 1, self.missile_type)
         except Exception as e:
-            logging.warning(f"Warning in Player.shoot: {e}")
+            logging.warning(f"[entities] Warning in Player.shoot: {e}")
 
     def switch_missile(self):
         try:
             self.missile_type = "guided" if self.missile_type == "straight" else "straight"
         except Exception as e:
-            logging.warning(f"Warning in Player.switch_missile: {e}")
+            logging.warning(f"[entities] Warning in Player.switch_missile: {e}")
 
 class Enemy:
     """Base enemy class"""
@@ -71,19 +74,21 @@ class EnemyB(Enemy):
         self.horizontal_speed = random.uniform(0.3, 0.7)
 
     def move(self):
-        """Move boat type enemy"""
-        self.y += self.vertical_direction * self.vertical_speed
-        self.x += self.horizontal_direction * self.horizontal_speed
+        try:
+            self.y += self.vertical_direction * self.vertical_speed
+            self.x += self.horizontal_direction * self.horizontal_speed
 
-        # Boundary checking
-        if self.x < 0:  
-            self.horizontal_direction = 1  
-        elif self.x + 3 > BOARD_WIDTH:  
-            self.horizontal_direction = -1  
+            # Boundary checking
+            if self.x < 0:  
+                self.horizontal_direction = 1  
+            elif self.x + 3 > BOARD_WIDTH:  
+                self.horizontal_direction = -1  
 
-        # Check if out of bounds
-        if self.y > BOARD_HEIGHT + 3:
-            self.running = False
+            # Check if out of bounds
+            if self.y > BOARD_HEIGHT + 3:
+                self.running = False
+        except Exception as e:
+            logging.warning(f"[entities] Warning in EnemyB.move: {e}")
 
 class EnemyJ(Enemy):
     """Jet type enemy - moves straight down quickly"""
@@ -95,10 +100,12 @@ class EnemyJ(Enemy):
         self.direction = random.uniform(1, 2)
 
     def move(self):
-        """Move jet type enemy"""
-        self.y += self.direction
-        if self.y > BOARD_HEIGHT + 3:
-            self.running = False
+        try:
+            self.y += self.direction
+            if self.y > BOARD_HEIGHT + 3:
+                self.running = False
+        except Exception as e:
+            logging.warning(f"[entities] Warning in EnemyJ.move: {e}")
 
 class EnemyH(Enemy):
     """Helicopter type enemy - moves erratically"""
@@ -113,27 +120,29 @@ class EnemyH(Enemy):
         self.horizontal_speed = random.uniform(0.2, 0.8)
 
     def move(self):
-        """Move helicopter type enemy"""
-        # Random direction changes
-        if random.randrange(0, 10) > 7:
-            self.vertical_direction = random.choice([-1, 0, 1])
-            self.horizontal_direction = random.choice([-1, 0, 1])
-            self.vertical_speed = random.uniform(0.2, 0.8)
-            self.horizontal_speed = random.uniform(0.2, 0.8)
-        
-        # Move
-        self.y += self.vertical_direction * self.vertical_speed
-        self.x += self.horizontal_direction * self.horizontal_speed
+        try:
+            # Random direction changes
+            if random.randrange(0, 10) > 7:
+                self.vertical_direction = random.choice([-1, 0, 1])
+                self.horizontal_direction = random.choice([-1, 0, 1])
+                self.vertical_speed = random.uniform(0.2, 0.8)
+                self.horizontal_speed = random.uniform(0.2, 0.8)
+            
+            # Move
+            self.y += self.vertical_direction * self.vertical_speed
+            self.x += self.horizontal_direction * self.horizontal_speed
 
-        # Boundary checking
-        if self.x < 0:
-            self.horizontal_direction = 1  
-        elif self.x + 2 > BOARD_WIDTH:  
-            self.horizontal_direction = -1
-        if self.y < 0:
-            self.vertical_direction = 1   
-        if self.y > BOARD_HEIGHT + 3: 
-            self.running = False
+            # Boundary checking
+            if self.x < 0:
+                self.horizontal_direction = 1  
+            elif self.x + 2 > BOARD_WIDTH:  
+                self.horizontal_direction = -1
+            if self.y < 0:
+                self.vertical_direction = 1   
+            if self.y > BOARD_HEIGHT + 3: 
+                self.running = False
+        except Exception as e:
+            logging.warning(f"[entities] Warning in EnemyH.move: {e}")
 
 class FuelDepot:
     def __init__(self, x, y):
@@ -149,7 +158,7 @@ class FuelDepot:
             if self.y < BOARD_HEIGHT + 3: 
                 self.running = False
         except Exception as e:
-            logging.warning(f"Warning in FuelDepot.move: {e}")
+            logging.warning(f"[entities] Warning in FuelDepot.move: {e}")
 
 class Missile:
     def __init__(self, x, y, missile_type):
@@ -167,4 +176,4 @@ class Missile:
             if self.y < -3: 
                 self.running = False
         except Exception as e:
-            logging.warning(f"Warning in Missile.move: {e}")
+            logging.warning(f"[entities] Warning in Missile.move: {e}")

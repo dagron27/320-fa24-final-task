@@ -6,6 +6,9 @@ import threading
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entity_pool import EntityPool
 
+# Configure the logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [entity_manager] %(message)s')
+
 class EntityManager:
     """Manages all game entities and their movement threads"""
     def __init__(self, game_state):

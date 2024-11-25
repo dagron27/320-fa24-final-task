@@ -4,6 +4,9 @@ import logging
 import threading
 from game.collision_handler import CollisionHandler
 
+# Configure the logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [game_loops] %(message)s')
+
 class GameLoops:
     """Manages all game loop logic and timing"""
     def __init__(self, game_state):
