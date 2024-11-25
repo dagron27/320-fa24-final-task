@@ -14,7 +14,7 @@ class GameLoops:
         self.FUEL_RATE = 3
         self.SCORE_RATE = 5
         self.COLLISION_CHECK_INTERVAL = 0.05
-        self.STATE_UPDATE_INTERVAL = 0.15
+        self.STATE_UPDATE_INTERVAL = 0.2
         
         # Performance monitoring
         self.performance_stats = {

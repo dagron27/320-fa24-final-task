@@ -33,7 +33,7 @@ class ClientNetwork:
     def receive_message(self):
         while True:
             try:
-                part = self.channel.recv(1024).decode('utf-8')
+                part = self.channel.recv(2048).decode('utf-8')
                 self.buffer += part
                 
                 while '\n' in self.buffer:

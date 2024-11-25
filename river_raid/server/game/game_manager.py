@@ -15,7 +15,7 @@ class GameManager:
         self.shared_state = GameState()
         self.running = False
         self.game_running = False
-        self.input_queue = queue.Queue(maxsize=100)  # Limit queue size
+        self.input_queue = queue.Queue(maxsize=40)  # Limit queue size
         
         # Thread monitoring
         self.thread_health = {}
@@ -25,7 +25,7 @@ class GameManager:
         self.THREAD_CHECK_INTERVAL = 5.0  # Seconds
         
         # Input rate limiting
-        self.MAX_INPUTS_PER_SECOND = 60
+        self.MAX_INPUTS_PER_SECOND = 40
         self.input_interval = 1.0 / self.MAX_INPUTS_PER_SECOND
         self.last_input_time = time.time()
         

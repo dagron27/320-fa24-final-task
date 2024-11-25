@@ -81,7 +81,7 @@ class EntityManager:
                             x = random.randint(0, int(BOARD_WIDTH) - 1)
                             enemy = self.entity_pool.acquire(enemy_type, x, 0, self.game_state)
                             self.game_state.add_enemy(enemy)
-                            logging.info(f"Spawned new {enemy_type} enemy")
+                            #logging.info(f"Spawned new {enemy_type} enemy")
             except Exception as e:
                 logging.warning(f"Warning in spawner loop: {e}")
             time.sleep(self.spawn_interval)
@@ -151,7 +151,7 @@ class EntityManager:
                         x = random.randint(0, int(BOARD_WIDTH) - 1)
                         depot = self.entity_pool.acquire('fuel', x, 0)
                         self.game_state.add_fuel_depot(depot)
-                        logging.info("Spawned new fuel depot")
+                        #logging.info("Spawned new fuel depot")
 
                     # Move existing fuel depots
                     for depot in self.game_state.fuel_depots[:]:
