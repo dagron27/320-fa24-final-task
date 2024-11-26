@@ -24,8 +24,9 @@ class SSHServer(paramiko.ServerInterface):
         self.buffer = ""
         
         # Start the game manager
-        self.game_manager.start()
-        logging.info("ssh_server: Game manager started.")
+        if not self.game_manager.running: 
+            self.game_manager.start() 
+            logging.info("ssh_server: Game manager started.")
 
     def check_channel_request(self, kind, chanid):
         logging.info(f"ssh_server: Channel request: {kind}")

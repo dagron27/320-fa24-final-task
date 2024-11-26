@@ -1,4 +1,3 @@
-# server/game/game_loops.py
 import time
 import logging
 import threading
@@ -51,7 +50,7 @@ class GameLoops:
                 # Track performance
                 with self.stats_lock:
                     self.performance_stats['collision_time'] = time.time() - loop_start
-                    #logging.info("game_loops: Updated collision_time performance stat")
+                    # logging.info("game_loops: Updated collision_time performance stat")
                     
                 # Maintain consistent update rate
                 elapsed = time.time() - loop_start
@@ -61,6 +60,8 @@ class GameLoops:
             except Exception as e:
                 logging.error(f"game_loops: Error in collision loop: {e}")
                 time.sleep(self.COLLISION_CHECK_INTERVAL)
+
+        logging.info("game_loops: Collision loop has stopped")
 
     def state_loop(self, running):
         """Main game state update loop"""
@@ -93,7 +94,7 @@ class GameLoops:
                 with self.stats_lock:
                     self.performance_stats['state_time'] = time.time() - loop_start
                     self.performance_stats['frame_count'] += 1
-                    #logging.info("game_loops: Updated state_time and frame_count performance stats")
+                    # logging.info("game_loops: Updated state_time and frame_count performance stats")
 
                 # Maintain update rate
                 elapsed = time.time() - loop_start
@@ -103,6 +104,8 @@ class GameLoops:
             except Exception as e:
                 logging.error(f"game_loops: Error in state loop: {e}")
                 time.sleep(self.STATE_UPDATE_INTERVAL)
+
+        logging.info("game_loops: State loop has stopped")
 
     def _update_game_state(self, delta_time, fuel_counter, score_counter):
         """Update game state with delta time"""
@@ -171,4 +174,4 @@ class GameLoops:
                 'frame_count': 0
             }
             self.last_update_time = time.time()
-            #logging.info("game_loops: Performance stats reset")
+            # logging.info("game_loops: Performance stats reset")

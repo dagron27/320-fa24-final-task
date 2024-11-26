@@ -49,10 +49,11 @@ class EntityManager:
             if not thread.is_alive():
                 thread.daemon = True
                 thread.start()
-                logging.info(f"entity_manager: Started {name} thread")
+                #logging.info(f"entity_manager: Started {name} thread")
                 time.sleep(0.1)  # Give it a moment to ensure it starts
                 if thread.is_alive():
-                    logging.info(f"entity_manager: {name} thread is alive")
+                    #logging.info(f"entity_manager: {name} thread is alive")
+                    pass
 
     def stop_movement_threads(self):
         """Stop all movement threads"""
@@ -60,18 +61,20 @@ class EntityManager:
 
         # Print list of movement threads before closing them
         thread_names = [name for name in self.movement_threads.keys()]
-        logging.info(f"entity_manager: Threads to be closed: {thread_names}")
+        #logging.info(f"entity_manager: Threads to be closed: {thread_names}")
 
         for name, thread in self.movement_threads.items():
             if thread.is_alive():
-                logging.info(f"entity_manager: Stopping {name} thread...")
+                #logging.info(f"entity_manager: Stopping {name} thread...")
                 thread.join(timeout=1.0)
                 if thread.is_alive():
                     logging.warning(f"entity_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"entity_manager: Stopped {name} thread successfully")
+                    pass
             else:
                 logging.info(f"entity_manager: {name} thread was not running")
+                pass
 
     def _get_weighted_enemy_type(self):
         """Get enemy type based on weights"""

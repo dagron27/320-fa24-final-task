@@ -11,6 +11,7 @@ from game.entity_manager import EntityManager
 class GameManager:
     """Manages game state, threads, and overall game flow"""
     def __init__(self):
+        logging.info("game_manager: Initialized")
         # Core game components
         self.shared_state = GameState()
         self.running = False
@@ -68,6 +69,7 @@ class GameManager:
 
     def start(self):
         """Start game manager and all threads"""
+        logging.info("game_manager: Running Start function")
         if not self.running:
             self.running = True
             self.game_running = True
@@ -109,6 +111,8 @@ class GameManager:
                     logging.warning(f"game_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"game_manager: Stopped {name} thread successfully")
+            else:
+                logging.info(f"entity_manager: {name} thread was not running")
 
         logging.info("game_manager: Game manager stopped successfully")
         time.sleep(1)  # Allow time for threads to stop before exiting
@@ -125,10 +129,10 @@ class GameManager:
                     
                 if not thread.is_alive():
                     if self.thread_restart_attempts[name] < self.MAX_RESTART_ATTEMPTS:
-                        logging.warning(f"game_manager: Thread {name} died, attempting restart...")
+                        logging.warning(f"game_manager: Thread - {name} - died, attempting restart...")
                         self._restart_thread(name)
                     else:
-                        logging.error(f"game_manager: Thread {name} failed to restart {self.MAX_RESTART_ATTEMPTS} times")
+                        logging.error(f"game_manager: Thread - {name} - failed to restart {self.MAX_RESTART_ATTEMPTS} times")
                         self.stop()
                         return
                         
@@ -138,6 +142,7 @@ class GameManager:
                     self.last_thread_check[name] = current_time
                     
             time.sleep(1.0)
+        logging.info("game_loops: Monitor loop has stopped")
 
     def _restart_thread(self, thread_name):
         """Restart a failed thread"""
@@ -162,7 +167,7 @@ class GameManager:
         new_thread.daemon = True
         self.threads[thread_name] = new_thread
         new_thread.start()
-        logging.info(f"Thread {thread_name} restarted (attempt {self.thread_restart_attempts[thread_name]})")
+        logging.info(f"game_manager: Thread - {thread_name} - restarted (attempt {self.thread_restart_attempts[thread_name]})")
 
     def _input_loop(self):
         """Handle input queue processing with rate limiting"""
@@ -188,6 +193,7 @@ class GameManager:
                 logging.error(f"Error in input loop: {e}")
                 if not self.thread_health['input']:
                     break
+        logging.info("game_loops: Input loop has stopped")
 
     def _handle_reset(self):
         """Handle game reset"""
