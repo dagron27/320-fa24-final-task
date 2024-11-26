@@ -97,7 +97,7 @@ class GameState:
         for _ in range(retry_attempts):
             try:
                 self.message_queue.put_nowait(action_data)
-                logging.info(f"Action {action_data} queued to be sent.")
+                #logging.info(f"Action {action_data} queued to be sent.")
                 return
             except queue.Full:
                 logging.warning("Message queue is full. Retrying...")

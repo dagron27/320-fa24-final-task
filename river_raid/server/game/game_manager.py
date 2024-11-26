@@ -71,23 +71,25 @@ class GameManager:
         if not self.running:
             self.running = True
             self.game_running = True
-            
+
             # Start monitoring thread first
-            self.threads['monitor'].start()
-            
+            if not self.threads['monitor'].is_alive():
+                self.threads['monitor'].start()
+                logging.info("game_manager: Started monitor thread")
+
             # Start core game threads
             for name, thread in self.threads.items():
-                if name != 'monitor':
+                if name != 'monitor' and not thread.is_alive():
                     thread.start()
-                    logging.info(f"Started {name} thread")
-            
+                    logging.info(f"game_manager: Started {name} thread")
+
             # Start entity management threads
             self.entity_manager.start_movement_threads()
-            logging.info("Game manager started successfully")
+            logging.info("game_manager: Game manager started successfully")
 
     def stop(self):
         """Stop game manager and cleanup all threads"""
-        logging.info("Stopping game manager...")
+        logging.info("game_manager: Stopping game manager...")
         self.running = False
         self.game_running = False
 
@@ -97,12 +99,18 @@ class GameManager:
         # Wait for all threads to finish
         for name, thread in self.threads.items():
             if thread.is_alive():
-                logging.info(f"Waiting for {name} thread to finish...")
+                logging.info(f"game_manager: Waiting for {name} thread to finish...")
                 thread.join(timeout=2.0)  # Give threads 2 seconds to finish
                 if thread.is_alive():
-                    logging.warning(f"{name} thread did not finish cleanly")
+                    logging.warning(f"game_manager: {name} thread did not finish cleanly")
+                else:
+                    logging.info(f"game_manager: Stopped {name} thread successfully")
 
-        logging.info("Game manager stopped successfully")
+        logging.info("game_manager: Game manager stopped successfully")
+
+        # Allow time for threads to stop before exiting
+        time.sleep(1)  # Adjust the delay time as needed
+
         os._exit(0)
 
     def _monitor_threads(self):

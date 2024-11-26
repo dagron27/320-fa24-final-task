@@ -60,10 +60,10 @@ class GameState:
                 self.last_update_time = time.time()
                 self.update_count = 0
                 
-                logging.info("Game state reset successfully")
+                logging.info("game_state: Game state reset successfully")
                 self._notify_state_change("reset")
             except Exception as e:
-                logging.error(f"Error during game state reset: {e}")
+                logging.error(f"game_state: Error during game state reset: {e}")
 
     def register_state_change_callback(self, callback):
         """Register a callback for state changes"""
@@ -75,7 +75,7 @@ class GameState:
             try:
                 callback(change_type)
             except Exception as e:
-                logging.error(f"Error in state change callback: {e}")
+                logging.error(f"game_state: Error in state change callback: {e}")
 
     def add_missile(self, missile):
         """Safely add a missile to the game state"""
@@ -86,12 +86,12 @@ class GameState:
                     
                 if len(self.missiles) < self.MAX_MISSILES:
                     self.missiles.append(missile)
-                    logging.debug(f"Missile added at position ({missile.x}, {missile.y})")
+                    logging.debug(f"game_state: Missile added at position ({missile.x}, {missile.y})")
                     self._notify_state_change("missile_added")
                 else:
-                    logging.warning("Maximum missile limit reached")
+                    logging.warning("game_state: Maximum missile limit reached")
             except Exception as e:
-                logging.error(f"Error adding missile: {e}")
+                logging.error(f"game_state: Error adding missile: {e}")
 
     def add_enemy(self, enemy):
         """Safely add an enemy to the game state"""
@@ -102,12 +102,12 @@ class GameState:
                     
                 if len(self.enemies) < self.MAX_ENEMIES:
                     self.enemies.append(enemy)
-                    logging.debug(f"Enemy type {enemy.type} added at ({enemy.x}, {enemy.y})")
+                    logging.debug(f"game_state: Enemy type {enemy.type} added at ({enemy.x}, {enemy.y})")
                     self._notify_state_change("enemy_added")
                 else:
-                    logging.warning("Maximum enemy limit reached")
+                    logging.warning("game_state: Maximum enemy limit reached")
             except Exception as e:
-                logging.error(f"Error adding enemy: {e}")
+                logging.error(f"game_state: Error adding enemy: {e}")
 
     def add_fuel_depot(self, depot):
         """Safely add a fuel depot to the game state"""
@@ -118,12 +118,12 @@ class GameState:
                     
                 if len(self.fuel_depots) < self.MAX_FUEL_DEPOTS:
                     self.fuel_depots.append(depot)
-                    logging.debug(f"Fuel depot added at ({depot.x}, {depot.y})")
+                    logging.debug(f"game_state: Fuel depot added at ({depot.x}, {depot.y})")
                     self._notify_state_change("fuel_added")
                 else:
-                    logging.warning("Maximum fuel depot limit reached")
+                    logging.warning("game_state: Maximum fuel depot limit reached")
             except Exception as e:
-                logging.error(f"Error adding fuel depot: {e}")
+                logging.error(f"game_state: Error adding fuel depot: {e}")
 
     def remove_missile(self, missile):
         """Safely remove a missile and return it to the pool"""
@@ -132,10 +132,10 @@ class GameState:
                 if missile in self.missiles:
                     self.missiles.remove(missile)
                     self.entity_pool.release(missile)
-                    logging.debug("Missile removed and returned to pool")
+                    logging.debug("game_state: Missile removed and returned to pool")
                     self._notify_state_change("missile_removed")
             except Exception as e:
-                logging.error(f"Error removing missile: {e}")
+                logging.error(f"game_state: Error removing missile: {e}")
 
     def remove_enemy(self, enemy):
         """Safely remove an enemy and return it to the pool"""
@@ -144,10 +144,10 @@ class GameState:
                 if enemy in self.enemies:
                     self.enemies.remove(enemy)
                     self.entity_pool.release(enemy)
-                    logging.debug(f"Enemy type {enemy.type} removed and returned to pool")
+                    logging.debug(f"game_state: Enemy type {enemy.type} removed and returned to pool")
                     self._notify_state_change("enemy_removed")
             except Exception as e:
-                logging.error(f"Error removing enemy: {e}")
+                logging.error(f"game_state: Error removing enemy: {e}")
 
     def remove_fuel_depot(self, depot):
         """Safely remove a fuel depot and return it to the pool"""
@@ -156,10 +156,10 @@ class GameState:
                 if depot in self.fuel_depots:
                     self.fuel_depots.remove(depot)
                     self.entity_pool.release(depot)
-                    logging.debug("Fuel depot removed and returned to pool")
+                    logging.debug("game_state: Fuel depot removed and returned to pool")
                     self._notify_state_change("fuel_removed")
             except Exception as e:
-                logging.error(f"Error removing fuel depot: {e}")
+                logging.error(f"game_state: Error removing fuel depot: {e}")
 
     def update_score(self, points):
         """Safely update the game score"""
@@ -169,10 +169,10 @@ class GameState:
                     return
                     
                 self.score += points
-                logging.debug(f"Score updated to {self.score}")
+                logging.debug(f"game_state: Score updated to {self.score}")
                 self._notify_state_change("score_updated")
             except Exception as e:
-                logging.error(f"Error updating score: {e}")
+                logging.error(f"game_state: Error updating score: {e}")
 
     def update_fuel(self, amount):
         """Safely update fuel amount"""
@@ -193,7 +193,7 @@ class GameState:
                     self._handle_fuel_depletion()
                     
             except Exception as e:
-                logging.error(f"Error updating fuel: {e}")
+                logging.error(f"game_state: Error updating fuel: {e}")
 
     def _handle_fuel_depletion(self):
         """Handle what happens when fuel runs out"""
@@ -203,11 +203,11 @@ class GameState:
             if not self.is_game_over():
                 # Refill fuel if still alive
                 self.fuel = 100
-                logging.info(f"Lost life due to fuel depletion, {self.lives} remaining")
+                logging.info(f"game_state: Lost life due to fuel depletion, {self.lives} remaining")
                 self._notify_state_change("life_lost")
                 
         except Exception as e:
-            logging.error(f"Error handling fuel depletion: {e}")
+            logging.error(f"game_state: Error handling fuel depletion: {e}")
 
     def update_lives(self, change):
         """Safely update lives"""
@@ -221,7 +221,7 @@ class GameState:
                 self._trigger_game_over("Out of lives")
                 
         except Exception as e:
-            logging.error(f"Error updating lives: {e}")
+            logging.error(f"game_state: Error updating lives: {e}")
 
     def _trigger_game_over(self, reason):
         """Handle transition to game over state"""
@@ -229,11 +229,11 @@ class GameState:
             self.game_state = self.STATE_GAME_OVER
             self.fuel = 0  # Ensure fuel stays at 0
             self.lives = 0  # Ensure lives stays at 0
-            logging.info(f"Game Over - {reason}")
+            logging.info(f"game_state: Game Over - {reason}")
             self._notify_state_change("game_over")
             
         except Exception as e:
-            logging.error(f"Error triggering game over: {e}")
+            logging.error(f"game_state: Error triggering game over: {e}")
 
     def get_state(self):
         """Get the current game state for network transmission"""
@@ -266,7 +266,7 @@ class GameState:
                     "g": self.game_state
                 }
             except Exception as e:
-                logging.error(f"Error getting game state: {e}")
+                logging.error(f"game_state: Error getting game state: {e}")
                 return {}
 
     def _update_metrics(self):
@@ -287,7 +287,7 @@ class GameState:
                 self.state_metrics['last_calculation_time'] = current_time
                 
         except Exception as e:
-            logging.error(f"Error updating metrics: {e}")
+            logging.error(f"game_state: Error updating metrics: {e}")
 
     def get_metrics(self):
         """Get current performance metrics"""

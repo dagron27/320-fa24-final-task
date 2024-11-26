@@ -38,7 +38,7 @@ class CollisionHandler:
             self._check_fuel_collisions()
             
         except Exception as e:
-            logging.error(f"Error in check_all_collisions: {e}")
+            logging.error(f"collision_handler: Error in check_all_collisions: {e}")
 
     def _update_collision_grid(self):
         """Update spatial partitioning grid with current entities"""
@@ -54,7 +54,7 @@ class CollisionHandler:
                     self.collision_grid[cell_y][cell_x].append(enemy)
                     
         except Exception as e:
-            logging.error(f"Error in _update_collision_grid: {e}")
+            logging.error(f"collision_handler: Error in _update_collision_grid: {e}")
 
     def _get_grid_cell(self, x, y):
         """Convert world coordinates to grid cell coordinates"""
@@ -85,7 +85,7 @@ class CollisionHandler:
                                 self._handle_player_enemy_collision(enemy)
                                 
         except Exception as e:
-            logging.error(f"Error in _check_vicinity_collisions: {e}")
+            logging.error(f"collision_handler: Error in _check_vicinity_collisions: {e}")
 
     def _check_missile_collisions(self):
         """Check collisions between missiles and enemies"""
@@ -110,7 +110,7 @@ class CollisionHandler:
                                     break
                                     
         except Exception as e:
-            logging.error(f"Error in _check_missile_collisions: {e}")
+            logging.error(f"collision_handler: Error in _check_missile_collisions: {e}")
 
     def _check_fuel_collisions(self):
         """Check collisions between player and fuel depots"""
@@ -120,7 +120,7 @@ class CollisionHandler:
                     self._handle_fuel_collision(depot)
                     
         except Exception as e:
-            logging.error(f"Error in _check_fuel_collisions: {e}")
+            logging.error(f"collision_handler: Error in _check_fuel_collisions: {e}")
 
     def _is_colliding(self, entity1, entity2):
         """Check collision between two entities using their dimensions"""
@@ -138,7 +138,7 @@ class CollisionHandler:
                     entity1.y + height1 > entity2.y)
                     
         except Exception as e:
-            logging.error(f"Error in _is_colliding: {e}")
+            logging.error(f"collision_handler: Error in _is_colliding: {e}")
             return False
 
     def _handle_player_enemy_collision(self, enemy):
@@ -151,7 +151,7 @@ class CollisionHandler:
             self.game_state.remove_enemy(enemy)
                 
         except Exception as e:
-            logging.error(f"Error in _handle_player_enemy_collision: {e}")
+            logging.error(f"collision_handler: Error in _handle_player_enemy_collision: {e}")
 
     def _handle_missile_enemy_collision(self, missile, enemy):
         """Handle collision between missile and enemy"""
@@ -159,17 +159,17 @@ class CollisionHandler:
             self.game_state.update_score(10)
             self.game_state.remove_enemy(enemy)
             self.game_state.remove_missile(missile)
-            logging.debug(f"Enemy destroyed! Score: {self.game_state.score}")
+            logging.debug(f"collision_handler: Enemy destroyed! Score: {self.game_state.score}")
             
         except Exception as e:
-            logging.error(f"Error in _handle_missile_enemy_collision: {e}")
+            logging.error(f"collision_handler: Error in _handle_missile_enemy_collision: {e}")
 
     def _handle_fuel_collision(self, depot):
         """Handle collision between player and fuel depot"""
         try:
             self.game_state.update_fuel(50)
             self.game_state.remove_fuel_depot(depot)
-            logging.debug(f"Fuel collected! Current fuel: {self.game_state.fuel}")
+            logging.debug(f"collision_handler: Fuel collected! Current fuel: {self.game_state.fuel}")
             
         except Exception as e:
-            logging.error(f"Error in _handle_fuel_collision: {e}")
+            logging.error(f"collision_handler: Error in _handle_fuel_collision: {e}")

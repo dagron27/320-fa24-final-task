@@ -15,9 +15,9 @@ class EntityManager:
         # Spawn rates and weights
         self.SPAWN_RATES = {
             'enemies': {
-                'B': 0.7,  # 20% chance for boats
-                'J': 0.5,  # 10% chance for jets
-                'H': 0.3   # 10% chance for helicopters
+                'B': 0.7,  # 70% chance for boats
+                'J': 0.5,  # 50% chance for jets
+                'H': 0.3   # 30% chance for helicopters
             },
             'fuel': 0.2    # 20% chance for fuel
         }
@@ -48,15 +48,19 @@ class EntityManager:
         for name, thread in self.movement_threads.items():
             thread.daemon = True
             thread.start()
-            logging.info(f"Started {name} thread")
+            logging.info(f"entity_manager: Started {name} thread")
             
     def stop_movement_threads(self):
         """Stop all movement threads"""
         self.running = False
         for name, thread in self.movement_threads.items():
             if thread.is_alive():
-                logging.info(f"Stopping {name} thread...")
+                logging.info(f"entity_manager: Stopping {name} thread...")
                 thread.join(timeout=1.0)
+                if thread.is_alive():
+                    logging.warning(f"entity_manager: {name} thread did not finish cleanly")
+                else:
+                    logging.info(f"entity_manager: Stopped {name} thread successfully")
 
     def _get_weighted_enemy_type(self):
         """Get enemy type based on weights"""
@@ -81,9 +85,9 @@ class EntityManager:
                             x = random.randint(0, int(BOARD_WIDTH) - 1)
                             enemy = self.entity_pool.acquire(enemy_type, x, 0, self.game_state)
                             self.game_state.add_enemy(enemy)
-                            logging.info(f"Spawned new {enemy_type} enemy")
+                            #logging.info(f"entity_manager: Spawned new {enemy_type} enemy")
             except Exception as e:
-                logging.warning(f"Warning in spawner loop: {e}")
+                logging.warning(f"entity_manager: Warning in spawner loop: {e}")
             time.sleep(self.spawn_interval)
 
     def _h_movement_loop(self):
@@ -97,7 +101,7 @@ class EntityManager:
                         if not enemy.running:
                             self.game_state.remove_enemy(enemy)
             except Exception as e:
-                logging.warning(f"Warning in H movement loop: {e}")
+                logging.warning(f"entity_manager: Warning in H movement loop: {e}")
             time.sleep(self.movement_interval)
 
     def _j_movement_loop(self):
@@ -111,7 +115,7 @@ class EntityManager:
                         if not enemy.running:
                             self.game_state.remove_enemy(enemy)
             except Exception as e:
-                logging.warning(f"Warning in J movement loop: {e}")
+                logging.warning(f"entity_manager: Warning in J movement loop: {e}")
             time.sleep(self.movement_interval)
 
     def _b_movement_loop(self):
@@ -125,7 +129,7 @@ class EntityManager:
                         if not enemy.running:
                             self.game_state.remove_enemy(enemy)
             except Exception as e:
-                logging.warning(f"Warning in B movement loop: {e}")
+                logging.warning(f"entity_manager: Warning in B movement loop: {e}")
             time.sleep(self.movement_interval)
 
     def _missile_loop(self):
@@ -138,7 +142,7 @@ class EntityManager:
                         if missile.y < -1:
                             self.game_state.remove_missile(missile)
             except Exception as e:
-                logging.warning(f"Warning in missile loop: {e}")
+                logging.warning(f"entity_manager: Warning in missile loop: {e}")
             time.sleep(0.05)  # Faster update for smooth missile movement
 
     def _fuel_loop(self):
@@ -151,7 +155,7 @@ class EntityManager:
                         x = random.randint(0, int(BOARD_WIDTH) - 1)
                         depot = self.entity_pool.acquire('fuel', x, 0)
                         self.game_state.add_fuel_depot(depot)
-                        logging.info("Spawned new fuel depot")
+                        #logging.info("entity_manager: Spawned new fuel depot")
 
                     # Move existing fuel depots
                     for depot in self.game_state.fuel_depots[:]:
@@ -159,7 +163,7 @@ class EntityManager:
                         if depot.y >= BOARD_HEIGHT + 3:
                             self.game_state.remove_fuel_depot(depot)
             except Exception as e:
-                logging.warning(f"Warning in fuel loop: {e}")
+                logging.warning(f"entity_manager: Warning in fuel loop: {e}")
             time.sleep(1.0)  # Check fuel spawning every second
 
     def adjust_spawn_rates(self, difficulty_factor=1.0):

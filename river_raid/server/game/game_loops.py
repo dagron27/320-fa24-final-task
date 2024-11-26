@@ -51,6 +51,7 @@ class GameLoops:
                 # Track performance
                 with self.stats_lock:
                     self.performance_stats['collision_time'] = time.time() - loop_start
+                    #logging.info("game_loops: Updated collision_time performance stat")
                     
                 # Maintain consistent update rate
                 elapsed = time.time() - loop_start
@@ -58,7 +59,7 @@ class GameLoops:
                     time.sleep(self.COLLISION_CHECK_INTERVAL - elapsed)
                     
             except Exception as e:
-                logging.error(f"Error in collision loop: {e}")
+                logging.error(f"game_loops: Error in collision loop: {e}")
                 time.sleep(self.COLLISION_CHECK_INTERVAL)
 
     def state_loop(self, running):
@@ -92,6 +93,7 @@ class GameLoops:
                 with self.stats_lock:
                     self.performance_stats['state_time'] = time.time() - loop_start
                     self.performance_stats['frame_count'] += 1
+                    #logging.info("game_loops: Updated state_time and frame_count performance stats")
 
                 # Maintain update rate
                 elapsed = time.time() - loop_start
@@ -99,7 +101,7 @@ class GameLoops:
                     time.sleep(self.STATE_UPDATE_INTERVAL - elapsed)
                     
             except Exception as e:
-                logging.error(f"Error in state loop: {e}")
+                logging.error(f"game_loops: Error in state loop: {e}")
                 time.sleep(self.STATE_UPDATE_INTERVAL)
 
     def _update_game_state(self, delta_time, fuel_counter, score_counter):
@@ -123,7 +125,7 @@ class GameLoops:
             self._update_entity_positions(delta_time)
             
         except Exception as e:
-            logging.error(f"Error in _update_game_state: {e}")
+            logging.error(f"game_loops: Error in _update_game_state: {e}")
 
     def _update_entity_positions(self, delta_time):
         """Update entity positions with interpolation"""
@@ -147,7 +149,7 @@ class GameLoops:
                     depot.y += depot.velocity.y * delta_time
                     
         except Exception as e:
-            logging.error(f"Error in _update_entity_positions: {e}")
+            logging.error(f"game_loops: Error in _update_entity_positions: {e}")
 
     def get_performance_stats(self):
         """Get current performance statistics"""
@@ -169,3 +171,4 @@ class GameLoops:
                 'frame_count': 0
             }
             self.last_update_time = time.time()
+            #logging.info("game_loops: Performance stats reset")
