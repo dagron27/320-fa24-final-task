@@ -3,9 +3,6 @@ import logging
 import math
 from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT
 
-# Configure the logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [collision_handler] %(message)s')
-
 class CollisionHandler:
     """Handles all collision detection and resolution in the game"""
     def __init__(self, game_state):

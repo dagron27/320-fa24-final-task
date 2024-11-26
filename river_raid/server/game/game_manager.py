@@ -8,9 +8,6 @@ from game.game_state import GameState
 from game.game_loops import GameLoops
 from game.entity_manager import EntityManager
 
-# Configure the logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [game_manager] %(message)s')
-
 class GameManager:
     """Manages game state, threads, and overall game flow"""
     def __init__(self):
@@ -102,7 +99,7 @@ class GameManager:
             if thread.is_alive():
                 logging.info(f"Waiting for {name} thread to finish...")
                 thread.join(timeout=2.0)  # Give threads 2 seconds to finish
-                if thread.is_alive():  # Corrected from `still_alive()` to `is_alive()`
+                if thread.is_alive():
                     logging.warning(f"{name} thread did not finish cleanly")
 
         logging.info("Game manager stopped successfully")

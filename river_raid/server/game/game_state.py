@@ -6,9 +6,6 @@ from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, FuelDepot, Missile
 from shared.entity_pool import EntityPool
 
-# Configure the logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [game_state] %(message)s')
-
 class GameState:
     """Manages the complete game state with thread safety and state validation"""
     
@@ -290,7 +287,7 @@ class GameState:
                 self.state_metrics['last_calculation_time'] = current_time
                 
         except Exception as e:
-            logging.error(f"[game_state] Error updating metrics: {e}")
+            logging.error(f"Error updating metrics: {e}")
 
     def get_metrics(self):
         """Get current performance metrics"""
