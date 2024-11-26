@@ -1,3 +1,4 @@
+# shared/config.py
 SCALE = 30
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 1000

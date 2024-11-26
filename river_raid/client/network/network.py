@@ -1,8 +1,11 @@
+# client/network/network.py
 import paramiko
 import os
+import time
+import json
+import logging
 from dotenv import load_dotenv
 from shared.network_utils import serialize_message, deserialize_message
-import json
 
 load_dotenv()
 
@@ -15,31 +18,58 @@ class ClientNetwork:
         self.ssh_client = paramiko.SSHClient()
 
     def connect(self):
-        """Establish an SSH connection to the server."""
+        logging.info("Establishing SSH connection to server...")
         self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh_client.connect(self.host, port=self.port, username=self.username, key_filename=self.key_filename)
         self.channel = self.ssh_client.get_transport().open_session()
-        self.buffer = ""  # Initialize buffer for received messages
+        self.buffer = ""
+        logging.info("SSH connection established.")
 
     def send_message(self, message):
-        """Send a message to the server."""
-        message_json = serialize_message(message) + '\n'  # Add newline to delimit messages
+        message_json = serialize_message(message) + '\n'
+        #logging.info(f"Sending message: {message_json.strip()}")  # Remove '\n' from log
         self.channel.send(message_json.encode('utf-8'))
 
     def receive_message(self):
-        """Receive a message from the server."""
         while True:
-            part = self.channel.recv(1024).decode('utf-8')
-            self.buffer += part
-            while '\n' in self.buffer:
-                message, self.buffer = self.buffer.split('\n', 1)
-                if message.strip():
-                    try:
-                        return deserialize_message(message)
-                    except json.JSONDecodeError:
-                        continue
+            try:
+                part = self.channel.recv(2048).decode('utf-8')
+                self.buffer += part
+                
+                while '\n' in self.buffer:
+                    message, self.buffer = self.buffer.split('\n', 1)
+                    if message.strip():
+                        try:
+                            deserialized_message = json.loads(message)
+                            if deserialized_message.get('status') == 'ok':
+                                if 'game_state' in deserialized_message:
+                                    # Handle direct game_state
+                                    game_state = deserialized_message['game_state']
+                                    return deserialized_message
+                                elif 'responses' in deserialized_message and len(deserialized_message['responses']) > 0:
+                                    # Handle nested game_state
+                                    nested_response = deserialized_message['responses'][0]
+                                    if 'game_state' in nested_response:
+                                        return nested_response
+                                else:
+                                    logging.warning(f"Received 'ok' status but no 'game_state' key found. Full message: {deserialized_message}")
+                            else:
+                                logging.warning(f"Unexpected status in message: {deserialized_message.get('status')}. Full message: {deserialized_message}")
+                        except json.JSONDecodeError as e:
+                            logging.warning(f"Failed to decode message: {message[:25]}, Error: {e}")
+                            continue
+                        except ValueError as e:
+                            logging.warning(f"Malformed message: {message[:25]}, Error: {e}")
+                            continue
+                    else:
+                        logging.warning(f"Received invalid JSON message: {message[:25]}")
+            except Exception as e:
+                logging.error(f"Error receiving message: {e}")
+                time.sleep(0.1)
+        return None
+
 
     def close(self):
-        """Close the SSH connection."""
+        logging.info("Closing SSH connection.")
         self.channel.close()
         self.ssh_client.close()
