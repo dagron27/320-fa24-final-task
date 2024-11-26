@@ -46,7 +46,7 @@ class SSHServer(paramiko.ServerInterface):
         try:
             #logging.info("ssh_server: Handling new client.")
             while True:
-                data = channel.recv(1024).decode('utf-8')
+                data = channel.recv(2048).decode('utf-8')
                 if not data:
                     logging.info("ssh_server: No more data from client. Closing connection.")
                     break

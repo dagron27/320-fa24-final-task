@@ -30,7 +30,7 @@ class EntityManager:
 
         # Timing intervals
         self.spawn_interval = 1.0  # Check for spawning every second
-        self.movement_interval = 0.2  # Move enemies every 0.2 seconds
+        self.movement_interval = 0.1  # Move enemies every 0.2 seconds
         self.running = True
 
         # Create threads for each game system

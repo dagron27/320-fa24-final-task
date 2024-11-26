@@ -39,15 +39,15 @@ class GameApp(tk.Tk):
         # Key state tracking and cooldowns
         self.keys_pressed = set()
         self.last_move_time = 0
-        self.move_cooldown = 0.15  # 200ms cooldown for movement
+        self.move_cooldown = 0.2  # 200ms cooldown for movement
         self.last_shoot_time = 0
-        self.shoot_cooldown = 0.4  # 500ms cooldown for shooting
+        self.shoot_cooldown = 0.2  # 500ms cooldown for shooting
 
         # Configure window close behavior
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
 
         # Set up game loop
-        self.tick_rate = 16
+        self.tick_rate = 20
         self.game_loop()
 
     def on_key_press(self, event):

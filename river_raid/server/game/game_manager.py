@@ -16,6 +16,7 @@ class GameManager:
         self.shared_state = GameState()
         self.running = False
         self.game_running = False
+        self.thread_lock = threading.Lock()
         self.input_queue = queue.Queue(maxsize=100)  # Limit queue size
 
         # Thread monitoring
@@ -121,53 +122,68 @@ class GameManager:
     def _monitor_threads(self):
         """Monitor thread health and restart if necessary"""
         while self.running:
-            current_time = time.time()
-            
-            for name, thread in self.threads.items():
-                if name == 'monitor':
-                    continue
-                    
-                if not thread.is_alive():
-                    if self.thread_restart_attempts[name] < self.MAX_RESTART_ATTEMPTS:
-                        logging.warning(f"game_manager: Thread - {name} - died, attempting restart...")
-                        self._restart_thread(name)
-                    else:
-                        logging.error(f"game_manager: Thread - {name} - failed to restart {self.MAX_RESTART_ATTEMPTS} times")
-                        self.stop()
-                        return
+            try:
+                current_time = time.time()
+                
+                for name in list(self.threads.keys()):  # Create a copy of keys to iterate
+                    if name == 'monitor':
+                        continue
                         
-                # Reset restart count if thread has been running for a while
-                if current_time - self.last_thread_check[name] > self.THREAD_CHECK_INTERVAL:
-                    self.thread_restart_attempts[name] = 0
-                    self.last_thread_check[name] = current_time
-                    
-            time.sleep(1.0)
-        logging.info("game_loops: Monitor loop has stopped")
+                    thread = self.threads.get(name)
+                    if thread and not thread.is_alive():
+                        if self.thread_restart_attempts[name] < self.MAX_RESTART_ATTEMPTS:
+                            logging.warning(f"game_manager: Thread - {name} - died, attempting restart...")
+                            self._restart_thread(name)
+                        else:
+                            logging.error(f"game_manager: Thread - {name} - failed to restart {self.MAX_RESTART_ATTEMPTS} times")
+                            self.stop()
+                            return
+                            
+                    # Reset restart count if thread has been running for a while
+                    if current_time - self.last_thread_check.get(name, 0) > self.THREAD_CHECK_INTERVAL:
+                        self.thread_restart_attempts[name] = 0
+                        self.last_thread_check[name] = current_time
+                        
+                time.sleep(1.0)
+            except Exception as e:
+                logging.error(f"Error in monitor thread: {e}")
+                time.sleep(1.0)
 
     def _restart_thread(self, thread_name):
-        """Restart a failed thread"""
-        self.thread_restart_attempts[thread_name] += 1
-        
-        # Create new thread based on type
-        if thread_name == 'collision':
-            new_thread = threading.Thread(
-                target=self.game_loops.collision_loop,
-                args=(self._is_game_running,)
-            )
-        elif thread_name == 'state':
-            new_thread = threading.Thread(
-                target=self.game_loops.state_loop,
-                args=(self._is_game_running,)
-            )
-        elif thread_name == 'input':
-            new_thread = threading.Thread(
-                target=self._input_loop
-            )
-        
-        new_thread.daemon = True
-        self.threads[thread_name] = new_thread
-        new_thread.start()
-        logging.info(f"game_manager: Thread - {thread_name} - restarted (attempt {self.thread_restart_attempts[thread_name]})")
+        """Restart a failed thread with synchronization"""
+        with self.thread_lock:  # Protect thread restart process
+            self.thread_restart_attempts[thread_name] += 1
+            
+            # Wait for old thread to fully terminate
+            if self.threads[thread_name].is_alive():
+                self.threads[thread_name].join(timeout=0.5)
+            
+            # Create new thread based on type
+            if thread_name == 'collision':
+                new_thread = threading.Thread(
+                    target=self.game_loops.collision_loop,
+                    args=(self._is_game_running,)
+                )
+            elif thread_name == 'state':
+                new_thread = threading.Thread(
+                    target=self.game_loops.state_loop,
+                    args=(self._is_game_running,)
+                )
+            elif thread_name == 'input':
+                new_thread = threading.Thread(
+                    target=self._input_loop
+                )
+            
+            new_thread.daemon = True
+            self.threads[thread_name] = new_thread
+            self.thread_health[thread_name] = True
+            self.last_thread_check[thread_name] = time.time()
+            
+            # Add small delay before starting new thread
+            time.sleep(0.1)
+            new_thread.start()
+            
+            logging.info(f"game_manager: Thread - {thread_name} - restarted (attempt {self.thread_restart_attempts[thread_name]})")
 
     def _input_loop(self):
         """Handle input queue processing with rate limiting"""

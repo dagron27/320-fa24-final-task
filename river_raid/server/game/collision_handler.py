@@ -1,4 +1,3 @@
-# server/game/collision_handler.py
 import logging
 import math
 from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT
@@ -11,51 +10,53 @@ class CollisionHandler:
         self.grid_width = BOARD_WIDTH / self.grid_size
         self.grid_height = BOARD_HEIGHT / self.grid_size
         self.collision_grid = None
+        
+        # Performance tracking
+        self.last_check_time = 0
+        self.collision_count = 0
 
     def check_all_collisions(self):
-        """Main collision detection method using spatial partitioning"""
+        """Main collision detection method using two-phase spatial partitioning"""
         try:
-            # Don't check collisions if game is over
+            # Phase 1: Quick check if we need to proceed
             with self.game_state.state_lock:
                 if self.game_state.game_state == self.game_state.STATE_GAME_OVER:
                     return
                 
-                # Update spatial partitioning grid
-                self._update_collision_grid()
+                # Take a snapshot of the game state
+                enemies = list(self.game_state.enemies)  # Copy list
+                missiles = list(self.game_state.missiles)
+                fuel_depots = list(self.game_state.fuel_depots)
+                player_x = self.game_state.player.x
+                player_y = self.game_state.player.y
                 
-                # Get player's grid position
-                player_cell = self._get_grid_cell(
-                    self.game_state.player.x,
-                    self.game_state.player.y
-                )
-                
-                # Check collisions in player's vicinity
-                self._check_vicinity_collisions(player_cell)
-                
-                # Check missile collisions
-                self._check_missile_collisions()
-                
-                # Check fuel depot collisions
-                self._check_fuel_collisions()
-            
-        except Exception as e:
-            logging.error(f"collision_handler: Error in check_all_collisions: {e}")
-
-    def _update_collision_grid(self):
-        """Update spatial partitioning grid with current entities"""
-        try:
-            # Initialize empty grid
+            # Phase 2: Build spatial partition grid (without lock)
             self.collision_grid = [[[] for _ in range(self.grid_size)] 
                                  for _ in range(self.grid_size)]
             
-            # Add enemies to grid
-            for enemy in self.game_state.enemies:
+            # Populate grid with enemies
+            for enemy in enemies:
                 cell_x, cell_y = self._get_grid_cell(enemy.x, enemy.y)
                 if 0 <= cell_x < self.grid_size and 0 <= cell_y < self.grid_size:
                     self.collision_grid[cell_y][cell_x].append(enemy)
-                    
+            
+            # Phase 3: Process different types of collisions
+            # Get player's cell for vicinity checks
+            player_cell = self._get_grid_cell(player_x, player_y)
+            
+            # Process collisions with appropriate locking
+            with self.game_state.state_lock:
+                # Check player-enemy collisions
+                self._check_vicinity_collisions(player_cell)
+                
+                # Check missile-enemy collisions
+                self._check_missile_collisions(missiles)
+                
+                # Check fuel depot collisions
+                self._check_fuel_collisions(fuel_depots)
+                
         except Exception as e:
-            logging.error(f"collision_handler: Error in _update_collision_grid: {e}")
+            logging.error(f"collision_handler: Error in check_all_collisions: {e}")
 
     def _get_grid_cell(self, x, y):
         """Convert world coordinates to grid cell coordinates"""
@@ -88,10 +89,13 @@ class CollisionHandler:
         except Exception as e:
             logging.error(f"collision_handler: Error in _check_vicinity_collisions: {e}")
 
-    def _check_missile_collisions(self):
+    def _check_missile_collisions(self, missiles):
         """Check collisions between missiles and enemies"""
         try:
-            for missile in self.game_state.missiles[:]:
+            for missile in missiles:
+                if missile not in self.game_state.missiles:  # Skip if missile was already removed
+                    continue
+                    
                 missile_cell = self._get_grid_cell(missile.x, missile.y)
                 cell_x, cell_y = missile_cell
                 
@@ -105,20 +109,21 @@ class CollisionHandler:
                             0 <= check_y < self.grid_size):
                             
                             for enemy in self.collision_grid[check_y][check_x]:
-                                if self._is_colliding(missile, enemy):
-                                    self._handle_missile_enemy_collision(missile, enemy)
-                                    # Break after first collision for this missile
-                                    break
+                                if enemy in self.game_state.enemies:  # Verify enemy still exists
+                                    if self._is_colliding(missile, enemy):
+                                        self._handle_missile_enemy_collision(missile, enemy)
+                                        break  # Break after first collision
                                     
         except Exception as e:
             logging.error(f"collision_handler: Error in _check_missile_collisions: {e}")
 
-    def _check_fuel_collisions(self):
+    def _check_fuel_collisions(self, fuel_depots):
         """Check collisions between player and fuel depots"""
         try:
-            for depot in self.game_state.fuel_depots[:]:
-                if self._is_colliding(self.game_state.player, depot):
-                    self._handle_fuel_collision(depot)
+            for depot in fuel_depots:
+                if depot in self.game_state.fuel_depots:  # Verify depot still exists
+                    if self._is_colliding(self.game_state.player, depot):
+                        self._handle_fuel_collision(depot)
                     
         except Exception as e:
             logging.error(f"collision_handler: Error in _check_fuel_collisions: {e}")
@@ -145,7 +150,6 @@ class CollisionHandler:
     def _handle_player_enemy_collision(self, enemy):
         """Handle collision between player and enemy"""
         try:
-            # We're already under state_lock from check_all_collisions
             if self.game_state.is_game_over():
                 return
                 
@@ -158,7 +162,6 @@ class CollisionHandler:
     def _handle_missile_enemy_collision(self, missile, enemy):
         """Handle collision between missile and enemy"""
         try:
-            # We're already under state_lock from check_all_collisions
             self.game_state.update_score(10)
             self.game_state.remove_enemy(enemy)
             self.game_state.remove_missile(missile)
@@ -170,7 +173,6 @@ class CollisionHandler:
     def _handle_fuel_collision(self, depot):
         """Handle collision between player and fuel depot"""
         try:
-            # We're already under state_lock from check_all_collisions
             self.game_state.update_fuel(50)
             self.game_state.remove_fuel_depot(depot)
             logging.debug(f"collision_handler: Fuel collected! Current fuel: {self.game_state.fuel}")
