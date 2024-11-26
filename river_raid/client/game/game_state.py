@@ -10,12 +10,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class GameState:
     def __init__(self, client):
         self.client = client
-        self.update_queue = queue.Queue(maxsize=2)  # Limit queue size
+        self.update_queue = queue.Queue(maxsize=1)  # Limit queue size
         self.message_queue = queue.Queue(maxsize=20)  # Queue for player actions
         self.running = True
         self.last_update = time.time()  # Initialize last_update time
-        self.update_interval = 0.075  # 50ms between updates
-        
+        self.update_interval = 0.15  # 50ms between updates
+
+        #Send initial reset action to the server 
+        self.send_action({"action": "reset_game"})
+        time.sleep(0.1)
+
         # Start threads
         self._start_threads()
 
