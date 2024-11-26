@@ -15,17 +15,11 @@ class EntityManager:
         # Spawn rates and weights
         self.SPAWN_RATES = {
             'enemies': {
-                'B': 0.3,  # Adjusted spawn rates
-                'J': 0.2,
-                'H': 0.1
+                'B': 0.07,  # Adjusted spawn rates
+                'J': 0.05,
+                'H': 0.03
             },
             'fuel': 0.2
-        }
-
-        self.ENEMY_WEIGHTS = {
-            'B': 50,
-            'J': 30,
-            'H': 20
         }
 
         # Timing controls
@@ -43,9 +37,9 @@ class EntityManager:
         }
         
         # Movement timing
-        self.movement_interval = 0.1
+        self.movement_interval = 0.2
         self.missile_interval = 0.1
-        
+        self.fuel_interval = 0.2        
         self.running = True
         
         # Create threads
@@ -185,10 +179,9 @@ class EntityManager:
                     if (current_time - self.last_spawn_time['fuel'] >= self.spawn_cooldowns['fuel'] and
                         random.random() < self.SPAWN_RATES['fuel']):
                         x = random.randint(0, int(BOARD_WIDTH) - 1)
-                        depot = self.entity_pool.acquire('fuel', x, 0)  # No game_state needed
+                        depot = self.entity_pool.acquire('fuel', x, 0)
                         self.game_state.add_fuel_depot(depot)
                         self.last_spawn_time['fuel'] = current_time
-                        logging.debug(f"Spawned fuel depot at x={x}")
 
                     # Move existing fuel depots
                     for depot in self.game_state.fuel_depots[:]:
@@ -198,7 +191,7 @@ class EntityManager:
                             
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in fuel loop: {e}")
-            time.sleep(0.5)  # Keep the shorter interval
+            time.sleep(self.fuel_interval)  # Use fuel_interval instead of hard-coded 0.5
 
     def adjust_spawn_rates(self, difficulty_factor=1.0):
         """Adjust spawn rates based on difficulty"""

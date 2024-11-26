@@ -14,8 +14,8 @@ class GameState:
     STATE_GAME_OVER = "game_over"
     
     # Game limits
-    MAX_MISSILES = 50
-    MAX_ENEMIES = 30
+    MAX_MISSILES = 30
+    MAX_ENEMIES = 20
     MAX_FUEL_DEPOTS = 10
     
     def __init__(self):
@@ -227,7 +227,7 @@ class GameState:
         """Handle transition to game over state"""
         try:
             self.game_state = self.STATE_GAME_OVER
-            self.fuel = 0  # Ensure fuel stays at 0
+            #self.fuel = 0  # Ensure fuel stays at 0
             self.lives = 0  # Ensure lives stays at 0
             logging.info(f"game_state: Game Over - {reason}")
             self._notify_state_change("game_over")
