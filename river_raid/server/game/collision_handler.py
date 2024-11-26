@@ -16,26 +16,27 @@ class CollisionHandler:
         """Main collision detection method using spatial partitioning"""
         try:
             # Don't check collisions if game is over
-            if self.game_state.game_state == self.game_state.STATE_GAME_OVER:
-                return
+            with self.game_state.state_lock:
+                if self.game_state.game_state == self.game_state.STATE_GAME_OVER:
+                    return
                 
-            # Update spatial partitioning grid
-            self._update_collision_grid()
-            
-            # Get player's grid position
-            player_cell = self._get_grid_cell(
-                self.game_state.player.x,
-                self.game_state.player.y
-            )
-            
-            # Check collisions in player's vicinity
-            self._check_vicinity_collisions(player_cell)
-            
-            # Check missile collisions
-            self._check_missile_collisions()
-            
-            # Check fuel depot collisions
-            self._check_fuel_collisions()
+                # Update spatial partitioning grid
+                self._update_collision_grid()
+                
+                # Get player's grid position
+                player_cell = self._get_grid_cell(
+                    self.game_state.player.x,
+                    self.game_state.player.y
+                )
+                
+                # Check collisions in player's vicinity
+                self._check_vicinity_collisions(player_cell)
+                
+                # Check missile collisions
+                self._check_missile_collisions()
+                
+                # Check fuel depot collisions
+                self._check_fuel_collisions()
             
         except Exception as e:
             logging.error(f"collision_handler: Error in check_all_collisions: {e}")
@@ -144,10 +145,11 @@ class CollisionHandler:
     def _handle_player_enemy_collision(self, enemy):
         """Handle collision between player and enemy"""
         try:
+            # We're already under state_lock from check_all_collisions
             if self.game_state.is_game_over():
                 return
                 
-            self.game_state.update_lives(-1)  # Use new method
+            self.game_state.update_lives(-1)
             self.game_state.remove_enemy(enemy)
                 
         except Exception as e:
@@ -156,6 +158,7 @@ class CollisionHandler:
     def _handle_missile_enemy_collision(self, missile, enemy):
         """Handle collision between missile and enemy"""
         try:
+            # We're already under state_lock from check_all_collisions
             self.game_state.update_score(10)
             self.game_state.remove_enemy(enemy)
             self.game_state.remove_missile(missile)
@@ -167,6 +170,7 @@ class CollisionHandler:
     def _handle_fuel_collision(self, depot):
         """Handle collision between player and fuel depot"""
         try:
+            # We're already under state_lock from check_all_collisions
             self.game_state.update_fuel(50)
             self.game_state.remove_fuel_depot(depot)
             logging.debug(f"collision_handler: Fuel collected! Current fuel: {self.game_state.fuel}")
