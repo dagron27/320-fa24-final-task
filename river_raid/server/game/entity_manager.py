@@ -10,30 +10,45 @@ class EntityManager:
     """Manages all game entities and their movement threads"""
     def __init__(self, game_state):
         self.game_state = game_state
-        self.entity_pool = EntityPool()
+        self.entity_pool = EntityPool(max_size=20)  # Reduced pool size
 
         # Spawn rates and weights
         self.SPAWN_RATES = {
             'enemies': {
-                'B': 0.7,  # 70% chance for boats
-                'J': 0.5,  # 50% chance for jets
-                'H': 0.3   # 30% chance for helicopters
+                'B': 0.3,  # Adjusted spawn rates
+                'J': 0.2,
+                'H': 0.1
             },
-            'fuel': 0.2    # 20% chance for fuel
+            'fuel': 0.2
         }
 
         self.ENEMY_WEIGHTS = {
-            'B': 50,  # Boat: 50% when spawning enemy
-            'J': 30,  # Jet: 30% when spawning enemy
-            'H': 20   # Helicopter: 20% when spawning enemy
+            'B': 50,
+            'J': 30,
+            'H': 20
         }
 
-        # Timing intervals
-        self.spawn_interval = 1.0  # Check for spawning every second
-        self.movement_interval = 0.1  # Move enemies every 0.2 seconds
+        # Timing controls
+        self.spawn_cooldowns = {
+            'B': 1.0,    # Time between spawn attempts
+            'J': 1.5,
+            'H': 2.0,
+            'fuel': 3.0
+        }
+        self.last_spawn_time = {
+            'B': 0,
+            'J': 0,
+            'H': 0,
+            'fuel': 0
+        }
+        
+        # Movement timing
+        self.movement_interval = 0.1
+        self.missile_interval = 0.1
+        
         self.running = True
-
-        # Create threads for each game system
+        
+        # Create threads
         self.movement_threads = {
             'H': threading.Thread(target=self._h_movement_loop),
             'J': threading.Thread(target=self._j_movement_loop),
@@ -49,136 +64,141 @@ class EntityManager:
             if not thread.is_alive():
                 thread.daemon = True
                 thread.start()
-                #logging.info(f"entity_manager: Started {name} thread")
-                time.sleep(0.1)  # Give it a moment to ensure it starts
-                if thread.is_alive():
-                    #logging.info(f"entity_manager: {name} thread is alive")
-                    pass
+                time.sleep(0.1)  # Ensure thread starts
 
     def stop_movement_threads(self):
         """Stop all movement threads"""
         self.running = False
-
-        # Print list of movement threads before closing them
-        thread_names = [name for name in self.movement_threads.keys()]
-        #logging.info(f"entity_manager: Threads to be closed: {thread_names}")
-
+        
         for name, thread in self.movement_threads.items():
             if thread.is_alive():
-                #logging.info(f"entity_manager: Stopping {name} thread...")
                 thread.join(timeout=1.0)
                 if thread.is_alive():
                     logging.warning(f"entity_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"entity_manager: Stopped {name} thread successfully")
-                    pass
-            else:
-                logging.info(f"entity_manager: {name} thread was not running")
-                pass
-
-    def _get_weighted_enemy_type(self):
-        """Get enemy type based on weights"""
-        total = sum(self.ENEMY_WEIGHTS.values())
-        r = random.uniform(0, total)
-        cumulative = 0
-
-        for enemy_type, weight in self.ENEMY_WEIGHTS.items():
-            cumulative += weight
-            if r <= cumulative:
-                return enemy_type
-        return 'B'  # Default to boat if something goes wrong
 
     def _spawner_loop(self):
-        """Dedicated thread for enemy spawning"""
+        """Enhanced spawner loop with cooldowns"""
         while self.running:
             try:
-                # Check spawning for each enemy type
+                current_time = time.time()
+                
+                # Enemy spawning
                 for enemy_type, rate in self.SPAWN_RATES['enemies'].items():
-                    if random.random() < rate:
+                    if (current_time - self.last_spawn_time[enemy_type] >= self.spawn_cooldowns[enemy_type] and 
+                        random.random() < rate):
+                        
+                        # Prepare spawn position outside lock
+                        x = random.randint(0, int(BOARD_WIDTH) - 1)
+                        
+                        # Create entity before state lock
+                        enemy = self.entity_pool.acquire(enemy_type, x, 0, self.game_state)
+                        
+                        # Update game state under lock
                         with self.game_state.state_lock:
-                            x = random.randint(0, int(BOARD_WIDTH) - 1)
-                            enemy = self.entity_pool.acquire(enemy_type, x, 0, self.game_state)
                             self.game_state.add_enemy(enemy)
-                            # logging.info(f"entity_manager: Spawned new {enemy_type} enemy")
+                            self.last_spawn_time[enemy_type] = current_time
+                            
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in spawner loop: {e}")
-            time.sleep(self.spawn_interval)
+            time.sleep(0.1)
+
+    def _process_entity_movement(self, entities, entity_type):
+        """Generic entity movement processor"""
+        moved_entities = []
+        removed_entities = []
+        
+        for entity in entities:
+            entity.move()
+            if hasattr(entity, 'running') and not entity.running:
+                removed_entities.append(entity)
+            else:
+                moved_entities.append(entity)
+                
+        return moved_entities, removed_entities
 
     def _h_movement_loop(self):
-        """Handle helicopter enemy movements"""
+        """Optimized helicopter movement loop"""
         while self.running:
             try:
                 with self.game_state.state_lock:
                     h_enemies = [e for e in self.game_state.enemies if e.type == 'H']
-                    for enemy in h_enemies:
-                        enemy.move()
-                        if not enemy.running:
-                            self.game_state.remove_enemy(enemy)
+                    _, removed = self._process_entity_movement(h_enemies, 'H')
+                    for enemy in removed:
+                        self.game_state.remove_enemy(enemy)
+                        
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in H movement loop: {e}")
             time.sleep(self.movement_interval)
 
     def _j_movement_loop(self):
-        """Handle jet enemy movements"""
+        """Optimized jet movement loop"""
         while self.running:
             try:
                 with self.game_state.state_lock:
                     j_enemies = [e for e in self.game_state.enemies if e.type == 'J']
-                    for enemy in j_enemies:
-                        enemy.move()
-                        if not enemy.running:
-                            self.game_state.remove_enemy(enemy)
+                    _, removed = self._process_entity_movement(j_enemies, 'J')
+                    for enemy in removed:
+                        self.game_state.remove_enemy(enemy)
+                        
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in J movement loop: {e}")
             time.sleep(self.movement_interval)
 
     def _b_movement_loop(self):
-        """Handle boat enemy movements"""
+        """Optimized boat movement loop"""
         while self.running:
             try:
                 with self.game_state.state_lock:
                     b_enemies = [e for e in self.game_state.enemies if e.type == 'B']
-                    for enemy in b_enemies:
-                        enemy.move()
-                        if not enemy.running:
-                            self.game_state.remove_enemy(enemy)
+                    _, removed = self._process_entity_movement(b_enemies, 'B')
+                    for enemy in removed:
+                        self.game_state.remove_enemy(enemy)
+                        
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in B movement loop: {e}")
             time.sleep(self.movement_interval)
 
     def _missile_loop(self):
-        """Handle missile movements"""
+        """Optimized missile movement loop"""
         while self.running:
             try:
                 with self.game_state.state_lock:
-                    for missile in self.game_state.missiles[:]:
-                        missile.move()
-                        if missile.y < -1:
-                            self.game_state.remove_missile(missile)
+                    missiles = self.game_state.missiles[:]
+                    _, removed = self._process_entity_movement(missiles, 'missile')
+                    for missile in removed:
+                        self.game_state.remove_missile(missile)
+                        
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in missile loop: {e}")
-            time.sleep(0.05)  # Faster update for smooth missile movement
+            time.sleep(self.missile_interval)
 
     def _fuel_loop(self):
         """Handle fuel depot spawning and movement"""
         while self.running:
             try:
                 with self.game_state.state_lock:
-                    # Spawn new fuel depots
-                    if random.random() < self.SPAWN_RATES['fuel']:
+                    current_time = time.time()
+                    
+                    # Spawn check with cooldown
+                    if (current_time - self.last_spawn_time['fuel'] >= self.spawn_cooldowns['fuel'] and
+                        random.random() < self.SPAWN_RATES['fuel']):
                         x = random.randint(0, int(BOARD_WIDTH) - 1)
-                        depot = self.entity_pool.acquire('fuel', x, 0)
+                        depot = self.entity_pool.acquire('fuel', x, 0)  # No game_state needed
                         self.game_state.add_fuel_depot(depot)
-                        # logging.info("entity_manager: Spawned new fuel depot")
+                        self.last_spawn_time['fuel'] = current_time
+                        logging.debug(f"Spawned fuel depot at x={x}")
 
                     # Move existing fuel depots
                     for depot in self.game_state.fuel_depots[:]:
                         depot.move()
                         if depot.y >= BOARD_HEIGHT + 3:
                             self.game_state.remove_fuel_depot(depot)
+                            
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in fuel loop: {e}")
-            time.sleep(1.0)  # Check fuel spawning every second
+            time.sleep(0.5)  # Keep the shorter interval
 
     def adjust_spawn_rates(self, difficulty_factor=1.0):
         """Adjust spawn rates based on difficulty"""

@@ -5,23 +5,17 @@ import logging
 from shared.entities import EnemyB, EnemyJ, EnemyH, FuelDepot, Missile
 
 class EntityPool:
-    """Thread-safe object pool for game entities"""
-    def __init__(self, max_size=100):
+    """Thread-safe object pool with optimized synchronization"""
+    def __init__(self, max_size=20):
         self.max_size = max_size
         self.pools = {
             'B': queue.Queue(max_size),
             'J': queue.Queue(max_size),
             'H': queue.Queue(max_size),
             'fuel': queue.Queue(max_size),
-            'missile': queue.Queue(max_size)
+            'missile': queue.Queue(max_size * 2)  # More missiles needed
         }
-        self.locks = {
-            'B': threading.Lock(),
-            'J': threading.Lock(),
-            'H': threading.Lock(),
-            'fuel': threading.Lock(),
-            'missile': threading.Lock()
-        }
+        self.single_lock = threading.Lock()
 
     def _create_entity(self, entity_type, x, y, game_logic=None):
         """Create a new entity based on type"""
@@ -34,15 +28,14 @@ class EntityPool:
         elif entity_type == 'fuel':
             return FuelDepot(x, y)
         elif entity_type == 'missile':
-            return Missile(x, y, "straight")  # Default to straight missile
+            return Missile(x, y, "straight")
 
     def acquire(self, entity_type, x, y, game_logic=None):
-        """Get an entity from the pool or create new one"""
-        with self.locks[entity_type]:
+        """Get an entity with optimized locking"""
+        with self.single_lock:
             try:
-                # Try to get from pool
                 entity = self.pools[entity_type].get_nowait()
-                # Reset entity position and state
+                # Reset entity state
                 entity.x = x
                 entity.y = y
                 entity.running = True
@@ -57,8 +50,10 @@ class EntityPool:
                 return entity
 
     def release(self, entity):
-        """Return entity to the pool"""
+        """Return entity to pool with optimized locking"""
         entity_type = None
+        
+        # Determine entity type
         if isinstance(entity, EnemyB):
             entity_type = 'B'
         elif isinstance(entity, EnemyJ):
@@ -71,10 +66,10 @@ class EntityPool:
             entity_type = 'missile'
 
         if entity_type:
-            with self.locks[entity_type]:
+            with self.single_lock:
                 try:
                     self.pools[entity_type].put_nowait(entity)
                     logging.debug(f"Released {entity_type} to pool")
                 except queue.Full:
                     logging.debug(f"Pool full for {entity_type}, discarding entity")
-                    pass  # If pool is full, let the entity be garbage collected
+                    pass  # Let it be garbage collected
