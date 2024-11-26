@@ -16,19 +16,19 @@ class GameManager:
         self.running = False
         self.game_running = False
         self.input_queue = queue.Queue(maxsize=100)  # Limit queue size
-        
+
         # Thread monitoring
         self.thread_health = {}
         self.last_thread_check = {}
         self.thread_restart_attempts = {}
         self.MAX_RESTART_ATTEMPTS = 3
         self.THREAD_CHECK_INTERVAL = 5.0  # Seconds
-        
+
         # Input rate limiting
         self.MAX_INPUTS_PER_SECOND = 60
         self.input_interval = 1.0 / self.MAX_INPUTS_PER_SECOND
         self.last_input_time = time.time()
-        
+
         # Initialize managers and threads
         self._setup_managers_and_threads()
 
@@ -90,27 +90,28 @@ class GameManager:
     def stop(self):
         """Stop game manager and cleanup all threads"""
         logging.info("game_manager: Stopping game manager...")
+
         self.running = False
         self.game_running = False
 
         # Stop entity manager threads
         self.entity_manager.stop_movement_threads()
 
+        # Add delay to ensure all entity manager threads are stopped
+        #time.sleep(1)
+
         # Wait for all threads to finish
         for name, thread in self.threads.items():
             if thread.is_alive():
                 logging.info(f"game_manager: Waiting for {name} thread to finish...")
-                thread.join(timeout=2.0)  # Give threads 2 seconds to finish
+                thread.join(timeout=5.0)  # Give threads 2 seconds to finish
                 if thread.is_alive():
                     logging.warning(f"game_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"game_manager: Stopped {name} thread successfully")
 
         logging.info("game_manager: Game manager stopped successfully")
-
-        # Allow time for threads to stop before exiting
-        time.sleep(1)  # Adjust the delay time as needed
-
+        time.sleep(1)  # Allow time for threads to stop before exiting
         os._exit(0)
 
     def _monitor_threads(self):
@@ -124,10 +125,10 @@ class GameManager:
                     
                 if not thread.is_alive():
                     if self.thread_restart_attempts[name] < self.MAX_RESTART_ATTEMPTS:
-                        logging.warning(f"Thread {name} died, attempting restart...")
+                        logging.warning(f"game_manager: Thread {name} died, attempting restart...")
                         self._restart_thread(name)
                     else:
-                        logging.error(f"Thread {name} failed to restart {self.MAX_RESTART_ATTEMPTS} times")
+                        logging.error(f"game_manager: Thread {name} failed to restart {self.MAX_RESTART_ATTEMPTS} times")
                         self.stop()
                         return
                         

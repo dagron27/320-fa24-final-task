@@ -11,7 +11,7 @@ class EntityManager:
     def __init__(self, game_state):
         self.game_state = game_state
         self.entity_pool = EntityPool()
-        
+
         # Spawn rates and weights
         self.SPAWN_RATES = {
             'enemies': {
@@ -32,7 +32,7 @@ class EntityManager:
         self.spawn_interval = 1.0  # Check for spawning every second
         self.movement_interval = 0.2  # Move enemies every 0.2 seconds
         self.running = True
-        
+
         # Create threads for each game system
         self.movement_threads = {
             'H': threading.Thread(target=self._h_movement_loop),
@@ -46,13 +46,22 @@ class EntityManager:
     def start_movement_threads(self):
         """Start all movement threads"""
         for name, thread in self.movement_threads.items():
-            thread.daemon = True
-            thread.start()
-            logging.info(f"entity_manager: Started {name} thread")
-            
+            if not thread.is_alive():
+                thread.daemon = True
+                thread.start()
+                logging.info(f"entity_manager: Started {name} thread")
+                time.sleep(0.1)  # Give it a moment to ensure it starts
+                if thread.is_alive():
+                    logging.info(f"entity_manager: {name} thread is alive")
+
     def stop_movement_threads(self):
         """Stop all movement threads"""
         self.running = False
+
+        # Print list of movement threads before closing them
+        thread_names = [name for name in self.movement_threads.keys()]
+        logging.info(f"entity_manager: Threads to be closed: {thread_names}")
+
         for name, thread in self.movement_threads.items():
             if thread.is_alive():
                 logging.info(f"entity_manager: Stopping {name} thread...")
@@ -61,13 +70,15 @@ class EntityManager:
                     logging.warning(f"entity_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"entity_manager: Stopped {name} thread successfully")
+            else:
+                logging.info(f"entity_manager: {name} thread was not running")
 
     def _get_weighted_enemy_type(self):
         """Get enemy type based on weights"""
         total = sum(self.ENEMY_WEIGHTS.values())
         r = random.uniform(0, total)
         cumulative = 0
-        
+
         for enemy_type, weight in self.ENEMY_WEIGHTS.items():
             cumulative += weight
             if r <= cumulative:
@@ -85,7 +96,7 @@ class EntityManager:
                             x = random.randint(0, int(BOARD_WIDTH) - 1)
                             enemy = self.entity_pool.acquire(enemy_type, x, 0, self.game_state)
                             self.game_state.add_enemy(enemy)
-                            #logging.info(f"entity_manager: Spawned new {enemy_type} enemy")
+                            # logging.info(f"entity_manager: Spawned new {enemy_type} enemy")
             except Exception as e:
                 logging.warning(f"entity_manager: Warning in spawner loop: {e}")
             time.sleep(self.spawn_interval)
@@ -155,7 +166,7 @@ class EntityManager:
                         x = random.randint(0, int(BOARD_WIDTH) - 1)
                         depot = self.entity_pool.acquire('fuel', x, 0)
                         self.game_state.add_fuel_depot(depot)
-                        #logging.info("entity_manager: Spawned new fuel depot")
+                        # logging.info("entity_manager: Spawned new fuel depot")
 
                     # Move existing fuel depots
                     for depot in self.game_state.fuel_depots[:]:
