@@ -1,15 +1,14 @@
-# server/game/game_manager.py
 import os 
 import threading
 import queue
 import time
 import logging
+import keyboard  # New import
 from game.game_state import GameState
 from game.game_loops import GameLoops
 from game.entity_manager import EntityManager
 
 class GameManager:
-    """Manages game state, threads, and overall game flow"""
     def __init__(self):
         logging.info("game_manager: Initialized")
         # Core game components
@@ -18,8 +17,8 @@ class GameManager:
         self.game_running = False
         self.thread_lock = threading.Lock()
         # Reduced queue size and added rate limiting
-        self.input_queue = queue.Queue(maxsize=20)  # Reduced from 100
-        self.MAX_INPUTS_PER_SECOND = 30  # Rate limit
+        self.input_queue = queue.Queue(maxsize=20)
+        self.MAX_INPUTS_PER_SECOND = 30
         self.last_input_time = time.time()
         self.input_interval = 1.0 / self.MAX_INPUTS_PER_SECOND
 
@@ -28,15 +27,20 @@ class GameManager:
         self.last_thread_check = {}
         self.thread_restart_attempts = {}
         self.MAX_RESTART_ATTEMPTS = 3
-        self.THREAD_CHECK_INTERVAL = 5.0  # Seconds
-
-        # Input rate limiting
-        self.MAX_INPUTS_PER_SECOND = 60
-        self.input_interval = 1.0 / self.MAX_INPUTS_PER_SECOND
-        self.last_input_time = time.time()
+        self.THREAD_CHECK_INTERVAL = 5.0
 
         # Initialize managers and threads
         self._setup_managers_and_threads()
+        
+        # Setup keyboard handler
+        keyboard.on_press_key('x', self._handle_quit_key)
+        logging.info("game_manager: Keyboard handler setup - Press 'x' to quit")
+
+    def _handle_quit_key(self, e):
+        """Handle quit key press"""
+        if e.name == 'x':
+            logging.info("game_manager: Quit triggered by keyboard")
+            self.quit()
 
     def _setup_managers_and_threads(self):
         """Initialize managers and setup all threads"""
@@ -95,7 +99,7 @@ class GameManager:
             logging.info("game_manager: Game manager started successfully")
 
     def stop(self):
-        """Stop game manager and cleanup all threads"""
+        """Stop game manager but keep process running"""
         logging.info("game_manager: Stopping game manager...")
 
         self.running = False
@@ -104,23 +108,39 @@ class GameManager:
         # Stop entity manager threads
         self.entity_manager.stop_movement_threads()
 
-        # Add delay to ensure all entity manager threads are stopped
-        #time.sleep(1)
-
         # Wait for all threads to finish
         for name, thread in self.threads.items():
             if thread.is_alive():
                 logging.info(f"game_manager: Waiting for {name} thread to finish...")
-                thread.join(timeout=5.0)  # Give threads 2 seconds to finish
+                thread.join(timeout=5.0)
                 if thread.is_alive():
                     logging.warning(f"game_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"game_manager: Stopped {name} thread successfully")
             else:
-                logging.info(f"entity_manager: {name} thread was not running")
+                logging.info(f"game_manager: {name} thread was not running")
 
         logging.info("game_manager: Game manager stopped successfully")
-        time.sleep(1)  # Allow time for threads to stop before exiting
+
+    def quit(self):
+        """Completely quit the game and exit the process"""
+        logging.info("game_manager: Initiating quit sequence...")
+        
+        # First stop all game processes
+        self.stop()
+        
+        # Additional cleanup and verification
+        all_threads_stopped = True
+        for name, thread in self.threads.items():
+            if thread.is_alive():
+                all_threads_stopped = False
+                logging.error(f"game_manager: Thread {name} still running after stop")
+        
+        if not all_threads_stopped:
+            logging.warning("game_manager: Some threads still running, forcing exit...")
+            time.sleep(1)  # Give one last chance for threads to clean up
+            
+        logging.info("game_manager: Exiting process")
         os._exit(0)
 
     def _monitor_threads(self):
@@ -203,6 +223,8 @@ class GameManager:
                 with self.shared_state.state_lock:
                     if message["action"] == "reset_game":
                         self._handle_reset()
+                    elif message["action"] == "quit":
+                        self.quit()
                     elif self.shared_state.game_state == GameState.STATE_RUNNING:
                         self._handle_action(message)
                         self.last_input_time = time.time()
