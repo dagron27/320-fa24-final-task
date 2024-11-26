@@ -17,7 +17,11 @@ class GameManager:
         self.running = False
         self.game_running = False
         self.thread_lock = threading.Lock()
-        self.input_queue = queue.Queue(maxsize=100)  # Limit queue size
+        # Reduced queue size and added rate limiting
+        self.input_queue = queue.Queue(maxsize=20)  # Reduced from 100
+        self.MAX_INPUTS_PER_SECOND = 30  # Rate limit
+        self.last_input_time = time.time()
+        self.input_interval = 1.0 / self.MAX_INPUTS_PER_SECOND
 
         # Thread monitoring
         self.thread_health = {}
@@ -232,15 +236,22 @@ class GameManager:
             logging.error(f"Error handling action: {e}")
 
     def process_message(self, message):
-        """Process incoming messages"""
+        """Process incoming messages with rate limiting"""
         try:
+            current_time = time.time()
+            if current_time - self.last_input_time < self.input_interval:
+                # Skip if too soon
+                return {"status": "ok", "game_state": self.shared_state.get_state()}
+
             if message == {'action': 'reset_game'}:
                 self._handle_reset()
             else:
-                if not self.input_queue.full():
-                    self.input_queue.put(message)
-                else:
+                try:
+                    self.input_queue.put(message, timeout=0.1)  # Short timeout
+                    self.last_input_time = current_time
+                except queue.Full:
                     logging.warning("Input queue full, dropping message")
+                    
             return {"status": "ok", "game_state": self.shared_state.get_state()}
         except Exception as e:
             logging.error(f"Error processing message: {e}")

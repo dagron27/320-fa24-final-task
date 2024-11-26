@@ -41,7 +41,7 @@ class GameApp(tk.Tk):
         self.last_move_time = 0
         self.move_cooldown = 0.2  # 200ms cooldown for movement
         self.last_shoot_time = 0
-        self.shoot_cooldown = 0.2  # 500ms cooldown for shooting
+        self.shoot_cooldown = 0.3  # 500ms cooldown for shooting
 
         # Configure window close behavior
         self.protocol("WM_DELETE_WINDOW", self.quit_game)
