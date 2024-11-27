@@ -1,151 +1,257 @@
-# server/game/game_loops.py
+# server/game/game_manager.py
 import os 
 import threading
 import queue
 import time
 import logging
-from game.game_state import GameState
-from game.game_loops import GameLoops
+from server.game.game_state import GameState
+from server.game.game_loops import GameLoops
+from server.game.entity_manager import EntityManager
 
 class GameManager:
+    """Manages game state, threads, and overall game flow"""
     def __init__(self):
-        # Initialize shared state and control flags
+        logging.info("game_manager: Initialized")
+        # Core game components
         self.shared_state = GameState()
         self.running = False
-        self.game_running = False  # Separate flag for game state
-        self.input_queue = queue.Queue()
+        self.game_running = False
+        self.thread_lock = threading.Lock()
+        # Reduced queue size and added rate limiting
+        self.input_queue = queue.Queue(maxsize=20)  # Reduced from 100
+        self.MAX_INPUTS_PER_SECOND = 30  # Rate limit
+        self.last_input_time = time.time()
+        self.input_interval = 1.0 / self.MAX_INPUTS_PER_SECOND
 
-        # Create and configure threads
-        self._setup_threads()
+        # Thread monitoring
+        self.thread_health = {}
+        self.last_thread_check = {}
+        self.thread_restart_attempts = {}
+        self.MAX_RESTART_ATTEMPTS = 3
+        self.THREAD_CHECK_INTERVAL = 5.0  # Seconds
 
-    def _setup_threads(self):
-        """Initialize all game threads except input thread"""
+        # Initialize managers and threads
+        self._setup_managers_and_threads()
+
+    def _setup_managers_and_threads(self):
+        """Initialize managers and setup all threads"""
+        # Initialize managers
         self.game_loops = GameLoops(self.shared_state)
-        self.enemy_thread = threading.Thread(target=self.game_loops.enemy_loop, args=(self._is_game_running,))
-        self.collision_thread = threading.Thread(target=self.game_loops.collision_loop, args=(self._is_game_running,))
-        self.state_thread = threading.Thread(target=self.game_loops.state_loop, args=(self._is_game_running,))
-        self.input_thread = threading.Thread(target=self._input_loop)
+        self.entity_manager = EntityManager(self.shared_state)
 
-        # Make threads daemon so they exit when main program exits
-        self.enemy_thread.daemon = True
-        self.collision_thread.daemon = True
-        self.state_thread.daemon = True
-        self.input_thread.daemon = True
+        # Create main threads
+        self.threads = {
+            'collision': threading.Thread(
+                target=self.game_loops.collision_loop,
+                args=(self._is_game_running,)
+            ),
+            'state': threading.Thread(
+                target=self.game_loops.state_loop,
+                args=(self._is_game_running,)
+            ),
+            'input': threading.Thread(
+                target=self._input_loop
+            ),
+            'monitor': threading.Thread(
+                target=self._monitor_threads
+            )
+        }
+
+        # Initialize thread health monitoring
+        for thread_name in self.threads:
+            self.thread_health[thread_name] = True
+            self.last_thread_check[thread_name] = time.time()
+            self.thread_restart_attempts[thread_name] = 0
+
+        # Set all threads as daemon
+        for thread in self.threads.values():
+            thread.daemon = True
 
     def start(self):
-        """Start all game threads and main game loop"""
+        """Start game manager and all threads"""
+        logging.info("game_manager: Running Start function")
         if not self.running:
             self.running = True
-            self.input_thread.start()  # Start input thread
-            self.start_game_threads()
+            self.game_running = True
+
+            # Start monitoring thread first
+            if not self.threads['monitor'].is_alive():
+                self.threads['monitor'].start()
+                logging.info("game_manager: Started monitor thread")
+
+            # Start core game threads
+            for name, thread in self.threads.items():
+                if name != 'monitor' and not thread.is_alive():
+                    thread.start()
+                    logging.info(f"game_manager: Started {name} thread")
+
+            # Start entity management threads
+            self.entity_manager.start_movement_threads()
+            logging.info("game_manager: Game manager started successfully")
 
     def stop(self):
-        """Stop the game and close the program"""
-        self.running = False  # Signal all threads to stop
-        self.game_running = False  # Ensure the game threads stop running
-        
-        # Ensure all threads are joined to avoid any hanging threads
-        if self.input_thread.is_alive():
-            self.input_thread.join()
-        if self.enemy_thread.is_alive():
-            self.enemy_thread.join()
-        if self.collision_thread.is_alive():
-            self.collision_thread.join()
-        if self.state_thread.is_alive():
-            self.state_thread.join()
-        if hasattr(self, 'game_loop_thread') and self.game_loop_thread.is_alive():
-            self.game_loop_thread.join()
-        
-        print("Stopped...")
-        os._exit(0)  # Exit the program
+        """Stop game manager and cleanup all threads"""
+        logging.info("game_manager: Stopping game manager...")
 
-    def start_game_threads(self):
-        """Start game threads and main game loop"""
-        if not self.game_running:
-            self.game_running = True
-            self.enemy_thread.start()
-            self.collision_thread.start()
-            self.state_thread.start()
-            
-            # Start the main game loop thread
-            self.game_loop_thread = threading.Thread(target=self.game_loop)
-            self.game_loop_thread.daemon = True
-            self.game_loop_thread.start()
-
-    def stop_game_threads(self):
-        """Stop game threads but keep input loop running"""
+        self.running = False
         self.game_running = False
-        if self.enemy_thread.is_alive():
-            self.enemy_thread.join()
-        if self.collision_thread.is_alive():
-            self.collision_thread.join()
-        if self.state_thread.is_alive():
-            self.state_thread.join()
-        #if self.game_loop_thread.is_alive():
-            #self.game_loop_thread.join()
 
-    def _input_loop(self):
-        """Main input processing loop"""
+        # Stop entity manager threads
+        self.entity_manager.stop_movement_threads()
+
+        # Add delay to ensure all entity manager threads are stopped
+        #time.sleep(1)
+
+        # Wait for all threads to finish
+        for name, thread in self.threads.items():
+            if thread.is_alive():
+                logging.info(f"game_manager: Waiting for {name} thread to finish...")
+                thread.join(timeout=5.0)  # Give threads 2 seconds to finish
+                if thread.is_alive():
+                    logging.warning(f"game_manager: {name} thread did not finish cleanly")
+                else:
+                    logging.info(f"game_manager: Stopped {name} thread successfully")
+            else:
+                logging.info(f"entity_manager: {name} thread was not running")
+
+        logging.info("game_manager: Game manager stopped successfully")
+        time.sleep(1)  # Allow time for threads to stop before exiting
+        os._exit(0)
+
+    def _monitor_threads(self):
+        """Monitor thread health and restart if necessary"""
         while self.running:
             try:
+                current_time = time.time()
+                
+                for name in list(self.threads.keys()):  # Create a copy of keys to iterate
+                    if name == 'monitor':
+                        continue
+                        
+                    thread = self.threads.get(name)
+                    if thread and not thread.is_alive():
+                        if self.thread_restart_attempts[name] < self.MAX_RESTART_ATTEMPTS:
+                            logging.warning(f"game_manager: Thread - {name} - died, attempting restart...")
+                            self._restart_thread(name)
+                        else:
+                            logging.error(f"game_manager: Thread - {name} - failed to restart {self.MAX_RESTART_ATTEMPTS} times")
+                            self.stop()
+                            return
+                            
+                    # Reset restart count if thread has been running for a while
+                    if current_time - self.last_thread_check.get(name, 0) > self.THREAD_CHECK_INTERVAL:
+                        self.thread_restart_attempts[name] = 0
+                        self.last_thread_check[name] = current_time
+                        
+                time.sleep(1.0)
+            except Exception as e:
+                logging.error(f"Error in monitor thread: {e}")
+                time.sleep(1.0)
+
+    def _restart_thread(self, thread_name):
+        """Restart a failed thread with synchronization"""
+        with self.thread_lock:  # Protect thread restart process
+            self.thread_restart_attempts[thread_name] += 1
+            
+            # Wait for old thread to fully terminate
+            if self.threads[thread_name].is_alive():
+                self.threads[thread_name].join(timeout=0.5)
+            
+            # Create new thread based on type
+            if thread_name == 'collision':
+                new_thread = threading.Thread(
+                    target=self.game_loops.collision_loop,
+                    args=(self._is_game_running,)
+                )
+            elif thread_name == 'state':
+                new_thread = threading.Thread(
+                    target=self.game_loops.state_loop,
+                    args=(self._is_game_running,)
+                )
+            elif thread_name == 'input':
+                new_thread = threading.Thread(
+                    target=self._input_loop
+                )
+            
+            new_thread.daemon = True
+            self.threads[thread_name] = new_thread
+            self.thread_health[thread_name] = True
+            self.last_thread_check[thread_name] = time.time()
+            
+            # Add small delay before starting new thread
+            time.sleep(0.1)
+            new_thread.start()
+            
+            logging.info(f"game_manager: Thread - {thread_name} - restarted (attempt {self.thread_restart_attempts[thread_name]})")
+
+    def _input_loop(self):
+        """Handle input queue processing with rate limiting"""
+        while self.running:
+            try:
+                # Rate limiting
+                current_time = time.time()
+                if current_time - self.last_input_time < self.input_interval:
+                    time.sleep(self.input_interval - (current_time - self.last_input_time))
+
+                # Process input
                 message = self.input_queue.get(timeout=0.05)
                 with self.shared_state.state_lock:
                     if message["action"] == "reset_game":
-                        self.reset_game()
+                        self._handle_reset()
                     elif self.shared_state.game_state == GameState.STATE_RUNNING:
-                        if message["action"] == "move":
-                            self.shared_state.player.move(message["direction"])
-                        elif message["action"] == "shoot":
-                            missile = self.shared_state.player.shoot()
-                            self.shared_state.add_missile(missile)
+                        self._handle_action(message)
+                        self.last_input_time = time.time()
+                        
             except queue.Empty:
                 continue
             except Exception as e:
-                logging.warning(f"Warning in _input_loop: {e}")
+                logging.error(f"Error in input loop: {e}")
+                if not self.thread_health['input']:
+                    break
+        logging.info("game_loops: Input loop has stopped")
+
+    def _handle_reset(self):
+        """Handle game reset"""
+        try:
+            self.shared_state.reset()
+            self.game_running = True
+            logging.info("Game reset successfully")
+        except Exception as e:
+            logging.error(f"Error during game reset: {e}")
+
+    def _handle_action(self, message):
+        """Handle game actions"""
+        try:
+            if message["action"] == "move":
+                self.shared_state.player.move(message["direction"])
+            elif message["action"] == "shoot":
+                missile = self.shared_state.player.shoot()
+                self.shared_state.add_missile(missile)
+        except Exception as e:
+            logging.error(f"Error handling action: {e}")
 
     def process_message(self, message):
-        """Process incoming messages from client"""
+        """Process incoming messages with rate limiting"""
         try:
+            current_time = time.time()
+            if current_time - self.last_input_time < self.input_interval:
+                # Skip if too soon
+                return {"status": "ok", "game_state": self.shared_state.get_state()}
+
             if message == {'action': 'reset_game'}:
-                self.reset_game()
+                self._handle_reset()
             else:
-                self.input_queue.put(message)
+                try:
+                    self.input_queue.put(message, timeout=0.1)  # Short timeout
+                    self.last_input_time = current_time
+                except queue.Full:
+                    logging.warning("Input queue full, dropping message")
+                    
             return {"status": "ok", "game_state": self.shared_state.get_state()}
         except Exception as e:
-            logging.warning(f"Warning in process_message: {e}")
+            logging.error(f"Error processing message: {e}")
             return {"status": "error", "message": str(e)}
 
-    def _running(self):
-        """Getter to determine if the game is still running"""
-        return self.running
-
     def _is_game_running(self):
-        """Determine if the game threads should keep running"""
+        """Check if game is running"""
         return self.game_running
-
-    def game_loop(self):
-        """Main game loop that coordinates game state and timing"""
-        TICK_RATE = 60  # Target FPS
-        TICK_TIME = 1.0 / TICK_RATE
-        
-        while self.game_running:
-            start_time = time.time()
-            
-            with self.shared_state.state_lock:
-                # Check if the game is over
-                if self.shared_state.game_state == GameState.STATE_GAME_OVER:
-                    self.stop_game_threads()
-                    break
-
-            # Control tick rate
-            end_time = time.time()
-            elapsed_time = end_time - start_time
-            sleep_time = max(0, TICK_TIME - elapsed_time)
-            time.sleep(sleep_time)
-
-    def reset_game(self):
-        """Reset the game state and restart threads"""
-        self.stop_game_threads()
-        self.shared_state.reset()
-        self._setup_threads()  # Reinitialize game threads
-        self.start_game_threads()  # Restart game threads

@@ -10,12 +10,16 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class GameState:
     def __init__(self, client):
         self.client = client
-        self.update_queue = queue.Queue(maxsize=3)  # Limit queue size
+        self.update_queue = queue.Queue(maxsize=1)  # Limit queue size
         self.message_queue = queue.Queue(maxsize=20)  # Queue for player actions
         self.running = True
         self.last_update = time.time()  # Initialize last_update time
-        self.update_interval = 0.05  # 50ms between updates
-        
+        self.update_interval = 0.15  # 50ms between updates
+
+        #Send initial reset action to the server 
+        self.send_action({"action": "reset_game"})
+        time.sleep(0.1)
+
         # Start threads
         self._start_threads()
 
@@ -97,7 +101,7 @@ class GameState:
         for _ in range(retry_attempts):
             try:
                 self.message_queue.put_nowait(action_data)
-                logging.info(f"Action {action_data} queued to be sent.")
+                #logging.info(f"Action {action_data} queued to be sent.")
                 return
             except queue.Full:
                 logging.warning("Message queue is full. Retrying...")

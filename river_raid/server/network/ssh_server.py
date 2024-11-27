@@ -4,7 +4,7 @@ import sys
 import threading
 import logging
 from shared.network_utils import serialize_message, deserialize_message
-from game.game_manager import GameManager
+from server.game.game_manager import GameManager
 
 # Configure logging
 logging.basicConfig(
@@ -24,30 +24,31 @@ class SSHServer(paramiko.ServerInterface):
         self.buffer = ""
         
         # Start the game manager
-        self.game_manager.start()
-        logging.info("Game manager started.")
+        if not self.game_manager.running: 
+            self.game_manager.start() 
+            logging.info("ssh_server: Game manager started.")
 
     def check_channel_request(self, kind, chanid):
-        logging.info(f"Channel request: {kind}")
+        logging.info(f"ssh_server: Channel request: {kind}")
         if kind == 'session':
             return paramiko.OPEN_SUCCEEDED
         return paramiko.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
     def check_auth_password(self, username, password):
-        logging.info(f"Authentication request: username={username}")
+        logging.info(f"ssh_server: Authentication request: username={username}")
         return paramiko.AUTH_SUCCESSFUL
 
     def check_auth_publickey(self, username, key):
-        logging.info(f"Public key authentication request: username={username}")
+        logging.info(f"ssh_server: Public key authentication request: username={username}")
         return paramiko.AUTH_SUCCESSFUL
 
     def handle_client(self, channel):  # Ensure this method is correctly defined within the class
         try:
-            #logging.info("Handling new client.")
+            #logging.info("ssh_server: Handling new client.")
             while True:
-                data = channel.recv(1024).decode('utf-8')
+                data = channel.recv(2048).decode('utf-8')
                 if not data:
-                    logging.info("No more data from client. Closing connection.")
+                    logging.info("ssh_server: No more data from client. Closing connection.")
                     break
 
                 self.buffer += data
@@ -59,7 +60,7 @@ class SSHServer(paramiko.ServerInterface):
                             # Deserialize the message from the client
                             message = deserialize_message(message_str)
                             if message is None:
-                                logging.error("Failed to deserialize message")
+                                logging.error("ssh_server: Failed to deserialize message")
                                 continue
 
                             # Process the message and prepare a response
@@ -77,15 +78,15 @@ class SSHServer(paramiko.ServerInterface):
 
                             # Log the response before sending
                             if not response_dict.get('status') == 'ok' or 'game_state' not in response_dict:
-                                logging.error(f"Response missing proper 'game_state' or 'ok' information: {response_dict}")
+                                logging.error(f"ssh_server: Response missing proper 'game_state' or 'ok' information: {response_dict}")
 
                             # Send the response back to the client
                             channel.send(response_str.encode('utf-8'))
                         except Exception as e:
-                            logging.error(f"Error processing message: {e}")
+                            logging.error(f"ssh_server: Error processing message: {e}")
         except Exception as e:
-            logging.error(f"Error handling client: {e}")
+            logging.error(f"ssh_server: Error handling client: {e}")
         finally:
-            logging.info("Stopping game manager and closing channel.")
+            logging.info("ssh_server: Stopping game manager and closing channel.")
             self.game_manager.stop()
             channel.close()

@@ -42,32 +42,24 @@ class Player:
         except Exception as e:
             logging.warning(f"Warning in Player.switch_missile: {e}")
 
-class Enemy(threading.Thread):
+class Enemy:
+    """Base enemy class"""
     def __init__(self, x, y, enemy_type, game_logic):
-        super().__init__()
         self.x = x
         self.y = y
         self.type = enemy_type
         self.game_logic = game_logic
         self.running = True
-        self.lock = threading.Lock()
         self.width = SCALE
         self.height = SCALE
         self.color = "red"
 
-    def run(self):
-        while self.running:
-            with self.lock:
-                try:
-                    self.move()
-                except Exception as e:
-                    logging.warning(f"Warning in Enemy.run: {e}")
-            time.sleep(0.2)
-
     def move(self):
+        """Base movement method"""
         raise NotImplementedError("This method should be overridden by subclasses")
 
 class EnemyB(Enemy):
+    """Boat type enemy - moves horizontally and downward"""
     def __init__(self, x, y, game_logic):
         super().__init__(x, y, "B", game_logic)
         self.width = SCALE * 3
@@ -79,23 +71,22 @@ class EnemyB(Enemy):
         self.horizontal_speed = random.uniform(0.3, 0.7)
 
     def move(self):
-        try:
-            self.y += self.vertical_direction * self.vertical_speed  # Boats move down the river
-            self.x += self.horizontal_direction * self.horizontal_speed
+        """Move boat type enemy"""
+        self.y += self.vertical_direction * self.vertical_speed
+        self.x += self.horizontal_direction * self.horizontal_speed
 
-            # Change direction at boundaries with a threshold
-            if self.x < 0:  
-                self.horizontal_direction = 1  
-            elif self.x + 3 > BOARD_WIDTH:  
-                self.horizontal_direction = -1  
+        # Boundary checking
+        if self.x < 0:  
+            self.horizontal_direction = 1  
+        elif self.x + 3 > BOARD_WIDTH:  
+            self.horizontal_direction = -1  
 
-            # Termination condition based on new limits
-            if self.y > BOARD_HEIGHT + 3:
-                self.running = False
-        except Exception as e:
-            logging.warning(f"Warning in EnemyB.move: {e}")
+        # Check if out of bounds
+        if self.y > BOARD_HEIGHT + 3:
+            self.running = False
 
 class EnemyJ(Enemy):
+    """Jet type enemy - moves straight down quickly"""
     def __init__(self, x, y, game_logic):
         super().__init__(x, y, "J", game_logic)
         self.width = SCALE * 1.5
@@ -104,15 +95,13 @@ class EnemyJ(Enemy):
         self.direction = random.uniform(1, 2)
 
     def move(self):
-        try:
-            self.y += self.direction  # Jets move faster
-            # Termination condition based on new limits 
-            if self.y > BOARD_HEIGHT + 3:
-                self.running = False
-        except Exception as e:
-            logging.warning(f"Warning in EnemyJ.move: {e}")
+        """Move jet type enemy"""
+        self.y += self.direction
+        if self.y > BOARD_HEIGHT + 3:
+            self.running = False
 
 class EnemyH(Enemy):
+    """Helicopter type enemy - moves erratically"""
     def __init__(self, x, y, game_logic):
         super().__init__(x, y, "H", game_logic)
         self.width = SCALE * 2
@@ -124,30 +113,27 @@ class EnemyH(Enemy):
         self.horizontal_speed = random.uniform(0.2, 0.8)
 
     def move(self):
-        try:
-            if random.randrange(0, 10) > 7:
-                self.vertical_direction = random.choice([-1, 0, 1])
-                self.horizontal_direction = random.choice([-1, 0, 1])
-                self.vertical_speed = random.uniform(0.2, 0.8)
-                self.horizontal_speed = random.uniform(0.2, 0.8)
-            
-            self.y += self.vertical_direction * self.vertical_speed
-            self.x += self.horizontal_direction * self.horizontal_speed
+        """Move helicopter type enemy"""
+        # Random direction changes
+        if random.randrange(0, 10) > 7:
+            self.vertical_direction = random.choice([-1, 0, 1])
+            self.horizontal_direction = random.choice([-1, 0, 1])
+            self.vertical_speed = random.uniform(0.2, 0.8)
+            self.horizontal_speed = random.uniform(0.2, 0.8)
+        
+        # Move
+        self.y += self.vertical_direction * self.vertical_speed
+        self.x += self.horizontal_direction * self.horizontal_speed
 
-            if self.x < 0:
-                self.horizontal_direction = 1  
-            elif self.x + 2 > BOARD_WIDTH:  
-                self.horizontal_direction = -1
-
-            # Change direction at boundaries with a threshold
-            if self.y < 0:
-                self.vertical_direction = 1   
-
-            # Termination condition based on new limits 
-            if self.y > BOARD_HEIGHT + 3: 
-                self.running = False
-        except Exception as e:
-            logging.warning(f"Warning in EnemyH.move: {e}")
+        # Boundary checking
+        if self.x < 0:
+            self.horizontal_direction = 1  
+        elif self.x + 2 > BOARD_WIDTH:  
+            self.horizontal_direction = -1
+        if self.y < 0:
+            self.vertical_direction = 1   
+        if self.y > BOARD_HEIGHT + 3: 
+            self.running = False
 
 class FuelDepot:
     def __init__(self, x, y):
