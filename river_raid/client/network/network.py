@@ -15,15 +15,30 @@ class ClientNetwork:
         self.port = int(os.getenv("CLIENT_PORT", 2200))
         self.username = os.getenv("CLIENT_USERNAME")
         self.key_filename = os.getenv("CLIENT_KEY_FILENAME")
+        self.key_passphrase = os.getenv("CLIENT_KEY_PASSPHRASE")  # Add this line
         self.ssh_client = paramiko.SSHClient()
 
     def connect(self):
         logging.info("Establishing SSH connection to server...")
-        self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh_client.connect(self.host, port=self.port, username=self.username, key_filename=self.key_filename)
-        self.channel = self.ssh_client.get_transport().open_session()
-        self.buffer = ""
-        logging.info("SSH connection established.")
+        try:
+            self.ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self.ssh_client.connect(
+                self.host, 
+                port=self.port, 
+                username=self.username, 
+                key_filename=self.key_filename,
+                passphrase=self.key_passphrase
+            )
+            self.channel = self.ssh_client.get_transport().open_session()
+            self.buffer = ""
+            logging.info("SSH connection established.")
+        except paramiko.ssh_exception.NoValidConnectionsError as e:
+            logging.error(f"Connection Error - Details: {str(e)}")
+            logging.error(f"Host: {self.host}, Port: {self.port}")
+            raise
+        except Exception as e:
+            logging.error(f"Failed to establish SSH connection: {str(e)}")
+            raise
 
     def send_message(self, message):
         message_json = serialize_message(message) + '\n'
