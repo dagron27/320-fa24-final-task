@@ -194,13 +194,3 @@ class GameApp(tk.Tk):
             logging.warning(f"Warning in _update_gui_after_reset: {e}")
             self._reset_in_progress = False
 
-    def quit_game(self):
-        """Clean up and close the game"""
-        try:
-            logging.info("Shutting down game...")
-            if hasattr(self, 'game_state'):
-                self.game_state.stop()
-            self.destroy()
-        except Exception as e:
-            logging.warning(f"Warning during shutdown: {e}")
-            self.destroy()
