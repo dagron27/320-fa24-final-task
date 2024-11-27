@@ -4,9 +4,9 @@ import logging
 import time
 import threading
 import queue
-from game.game_logic import ClientGameLogic
-from game.canvas_gui import GameCanvas
-from game.game_state import GameState
+from client.game.game_logic import ClientGameLogic
+from client.game.canvas_gui import GameCanvas
+from client.game.game_state import GameState
 from shared.config import WINDOW_HEIGHT, WINDOW_WIDTH
 
 class GameApp(tk.Tk):

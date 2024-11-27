@@ -4,9 +4,9 @@ import threading
 import queue
 import time
 import logging
-from game.game_state import GameState
-from game.game_loops import GameLoops
-from game.entity_manager import EntityManager
+from server.game.game_state import GameState
+from server.game.game_loops import GameLoops
+from server.game.entity_manager import EntityManager
 
 class GameManager:
     """Manages game state, threads, and overall game flow"""

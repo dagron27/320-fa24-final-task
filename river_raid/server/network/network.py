@@ -3,7 +3,7 @@ import paramiko
 import os
 import socket
 import logging
-from network.ssh_server import SSHServer
+from server.network.ssh_server import SSHServer
 from dotenv import load_dotenv
 
 # Load environment variables

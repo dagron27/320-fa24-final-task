@@ -1,7 +1,7 @@
 import time
 import logging
 import threading
-from game.collision_handler import CollisionHandler
+from server.game.collision_handler import CollisionHandler
 
 class GameLoops:
     """Manages all game loop logic and timing"""

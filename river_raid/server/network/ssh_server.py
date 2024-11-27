@@ -4,7 +4,7 @@ import sys
 import threading
 import logging
 from shared.network_utils import serialize_message, deserialize_message
-from game.game_manager import GameManager
+from server.game.game_manager import GameManager
 
 # Configure logging
 logging.basicConfig(
