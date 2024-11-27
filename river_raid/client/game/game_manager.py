@@ -194,3 +194,43 @@ class GameApp(tk.Tk):
             logging.warning(f"Warning in _update_gui_after_reset: {e}")
             self._reset_in_progress = False
 
+    def quit_game(self):
+        """Clean up and close the game"""
+        try:
+            logging.info("Shutting down game...")
+            if hasattr(self, 'game_state'):
+                # Stop the game state threads
+                self.game_state.stop()
+                
+                # Wait for message thread to complete
+                if hasattr(self.game_state, 'message_thread'):
+                    self.game_state.message_thread.join(timeout=2.0)
+                    if self.game_state.message_thread.is_alive():
+                        logging.warning("Message thread did not terminate cleanly")
+                
+                # Wait for update thread to complete
+                if hasattr(self.game_state, 'update_thread'):
+                    self.game_state.update_thread.join(timeout=2.0)
+                    if self.game_state.update_thread.is_alive():
+                        logging.warning("Update thread did not terminate cleanly")
+                
+                # Clear queues
+                while not self.game_state.message_queue.empty():
+                    try:
+                        self.game_state.message_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                        
+                while not self.game_state.update_queue.empty():
+                    try:
+                        self.game_state.update_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                        
+            # Destroy the window
+            self.destroy()
+            
+        except Exception as e:
+            logging.error(f"Error during shutdown: {e}")
+            # Force destroy if cleanup fails
+            self.destroy()
