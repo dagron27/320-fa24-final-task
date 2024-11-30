@@ -1,4 +1,4 @@
-from network.network import ServerNetwork
+from server.network.network import ServerNetwork
 
 if __name__ == "__main__":
     server = ServerNetwork()
