@@ -4,6 +4,7 @@ import threading
 import queue
 import time
 import logging
+import signal
 from server.game.game_state import GameState
 from server.game.game_loops import GameLoops
 from server.game.entity_manager import EntityManager
@@ -32,6 +33,15 @@ class GameManager:
 
         # Initialize managers and threads
         self._setup_managers_and_threads()
+
+        # Register signal handlers for graceful shutdown
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _signal_handler(self, sig, frame):
+        """Handle termination signals (e.g., Ctrl+C)"""
+        logging.info(f"game_manager: Caught signal {sig}. Exiting gracefully...")
+        self.quit_game()
 
     def _setup_managers_and_threads(self):
         """Initialize managers and setup all threads"""
@@ -99,23 +109,24 @@ class GameManager:
         # Stop entity manager threads
         self.entity_manager.stop_movement_threads()
 
-        # Add delay to ensure all entity manager threads are stopped
-        #time.sleep(1)
-
         # Wait for all threads to finish
         for name, thread in self.threads.items():
             if thread.is_alive():
                 logging.info(f"game_manager: Waiting for {name} thread to finish...")
-                thread.join(timeout=5.0)  # Give threads 2 seconds to finish
+                thread.join(timeout=5.0)  # Give threads 5 seconds to finish
                 if thread.is_alive():
                     logging.warning(f"game_manager: {name} thread did not finish cleanly")
                 else:
                     logging.info(f"game_manager: Stopped {name} thread successfully")
             else:
-                logging.info(f"entity_manager: {name} thread was not running")
+                logging.info(f"game_manager: {name} thread was not running")
 
         logging.info("game_manager: Game manager stopped successfully")
-        time.sleep(1)  # Allow time for threads to stop before exiting
+
+    def quit_game(self):
+        """Gracefully stop the game and exit"""
+        self.stop()
+        logging.info("game_manager: Application closed successfully")
         os._exit(0)
 
     def _monitor_threads(self):
