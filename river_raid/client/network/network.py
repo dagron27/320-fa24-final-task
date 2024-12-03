@@ -15,7 +15,7 @@ class ClientNetwork:
         self.port = int(os.getenv("CLIENT_PORT", 2200))
         self.username = os.getenv("CLIENT_USERNAME")
         self.key_filename = os.getenv("CLIENT_KEY_FILENAME")
-        self.key_passphrase = os.getenv("CLIENT_KEY_PASSPHRASE")  # Add this line
+        self.key_passphrase = os.getenv("CLIENT_KEY_PASSPHRASE")
         self.ssh_client = paramiko.SSHClient()
 
     def connect(self):
@@ -82,7 +82,6 @@ class ClientNetwork:
                 logging.error(f"Error receiving message: {e}")
                 time.sleep(0.1)
         return None
-
 
     def close(self):
         logging.info("Closing SSH connection.")

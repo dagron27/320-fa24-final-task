@@ -4,12 +4,12 @@ import logging
 import time
 import threading
 import queue
-from client.game.game_logic import ClientGameLogic
+from client.game.game_logic import GameLogic
 from client.game.canvas_gui import GameCanvas
 from client.game.game_state import GameState
 from shared.config import WINDOW_HEIGHT, WINDOW_WIDTH
 
-class GameApp(tk.Tk):
+class GameManager(tk.Tk):
     def __init__(self, client):
         super().__init__()
         self.title("River Raid")
@@ -17,7 +17,7 @@ class GameApp(tk.Tk):
 
         # Initialize game state and logic
         self.game_state = GameState(client)
-        self.game_logic = ClientGameLogic(self.game_state)
+        self.game_logic = GameLogic(self.game_state)
 
         # Create canvas and GUI elements
         self.canvas = GameCanvas(self, self.game_logic)

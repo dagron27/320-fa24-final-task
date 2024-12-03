@@ -3,7 +3,7 @@ import logging
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, EnemyB, EnemyJ, EnemyH, FuelDepot, Missile
 
-class ClientGameLogic:
+class GameLogic:
     def __init__(self, game_state):
         self.game_state = game_state
         self.reset_game()

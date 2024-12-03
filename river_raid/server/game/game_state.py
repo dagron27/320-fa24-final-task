@@ -4,7 +4,6 @@ import logging
 import time
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
 from shared.entities import Player, FuelDepot, Missile
-from shared.entity_pool import EntityPool
 
 class GameState:
     """Manages the complete game state with thread safety and state validation"""
@@ -21,7 +20,6 @@ class GameState:
     def __init__(self):
         # Core state management
         self.state_lock = threading.RLock()
-        self.entity_pool = EntityPool()
         
         # State change callbacks
         self.state_change_callbacks = []
@@ -126,37 +124,34 @@ class GameState:
                 logging.error(f"game_state: Error adding fuel depot: {e}")
 
     def remove_missile(self, missile):
-        """Safely remove a missile and return it to the pool"""
+        """Safely remove a missile from game state"""
         with self.state_lock:
             try:
                 if missile in self.missiles:
                     self.missiles.remove(missile)
-                    self.entity_pool.release(missile)
-                    logging.debug("game_state: Missile removed and returned to pool")
+                    logging.debug("game_state: Missile removed")
                     self._notify_state_change("missile_removed")
             except Exception as e:
                 logging.error(f"game_state: Error removing missile: {e}")
 
     def remove_enemy(self, enemy):
-        """Safely remove an enemy and return it to the pool"""
+        """Safely remove an enemy from game state"""
         with self.state_lock:
             try:
                 if enemy in self.enemies:
                     self.enemies.remove(enemy)
-                    self.entity_pool.release(enemy)
-                    logging.debug(f"game_state: Enemy type {enemy.type} removed and returned to pool")
+                    logging.debug(f"game_state: Enemy type {enemy.type} removed")
                     self._notify_state_change("enemy_removed")
             except Exception as e:
                 logging.error(f"game_state: Error removing enemy: {e}")
 
     def remove_fuel_depot(self, depot):
-        """Safely remove a fuel depot and return it to the pool"""
+        """Safely remove a fuel depot from game state"""
         with self.state_lock:
             try:
                 if depot in self.fuel_depots:
                     self.fuel_depots.remove(depot)
-                    self.entity_pool.release(depot)
-                    logging.debug("game_state: Fuel depot removed and returned to pool")
+                    logging.debug("game_state: Fuel depot removed")
                     self._notify_state_change("fuel_removed")
             except Exception as e:
                 logging.error(f"game_state: Error removing fuel depot: {e}")
@@ -184,11 +179,9 @@ class GameState:
                 previous_fuel = self.fuel
                 self.fuel = max(0, min(100, self.fuel + amount))
                 
-                # Notify about fuel update if it changed
                 if self.fuel != previous_fuel:
                     self._notify_state_change("fuel_updated")
                 
-                # Check if fuel depleted
                 if self.fuel <= 0:
                     self._handle_fuel_depletion()
                     
@@ -201,7 +194,6 @@ class GameState:
             self.update_lives(-1)
             
             if not self.is_game_over():
-                # Refill fuel if still alive
                 self.fuel = 100
                 logging.info(f"game_state: Lost life due to fuel depletion, {self.lives} remaining")
                 self._notify_state_change("life_lost")
@@ -227,8 +219,7 @@ class GameState:
         """Handle transition to game over state"""
         try:
             self.game_state = self.STATE_GAME_OVER
-            #self.fuel = 0  # Ensure fuel stays at 0
-            self.lives = 0  # Ensure lives stays at 0
+            self.lives = 0
             logging.info(f"game_state: Game Over - {reason}")
             self._notify_state_change("game_over")
             
@@ -242,20 +233,20 @@ class GameState:
                 self._update_metrics()
                 
                 return {
-                    "p": {  # Player
+                    "p": {
                         "x": self.player.x,
                         "y": self.player.y
                     },
-                    "e": [{  # Enemies
+                    "e": [{
                         "x": enemy.x,
                         "y": enemy.y,
                         "t": enemy.type
                     } for enemy in self.enemies],
-                    "f": [{  # Fuel depots
+                    "f": [{
                         "x": depot.x,
                         "y": depot.y
                     } for depot in self.fuel_depots],
-                    "m": [{  # Missiles
+                    "m": [{
                         "x": missile.x,
                         "y": missile.y,
                         "t": missile.missile_type
@@ -275,7 +266,6 @@ class GameState:
             current_time = time.time()
             self.update_count += 1
             
-            # Calculate metrics every second
             if current_time - self.state_metrics['last_calculation_time'] >= 1.0:
                 self.state_metrics['updates_per_second'] = self.update_count
                 self.state_metrics['entity_count'] = (
