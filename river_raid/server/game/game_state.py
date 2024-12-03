@@ -3,7 +3,7 @@ import threading
 import logging
 import time
 from shared.config import BOARD_WIDTH, BOARD_HEIGHT
-from shared.entities import Player, FuelDepot, Missile
+from shared.entities import Player
 
 class GameState:
     """Manages the complete game state with thread safety and state validation"""

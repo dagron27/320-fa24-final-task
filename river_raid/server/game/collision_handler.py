@@ -1,5 +1,4 @@
 import logging
-import math
 from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT
 
 class CollisionHandler:

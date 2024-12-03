@@ -1,9 +1,7 @@
 # shared/entities.py
-import threading
-import time
 import random
 import logging
-from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT, CANVAS_HEIGHT, CANVAS_WIDTH
+from shared.config import SCALE, BOARD_WIDTH, BOARD_HEIGHT
 
 class Player:
     def __init__(self, x, y):
